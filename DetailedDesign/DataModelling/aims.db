@@ -1,0 +1,210 @@
+-- ============================================
+-- AIMS DATABASE SCHEMA - PostgreSQL
+-- ============================================
+
+-- ---------- USER & ORDER DOMAIN ----------
+
+CREATE TABLE app_user (
+    user_id      VARCHAR PRIMARY KEY,
+    name         TEXT,
+    email        TEXT NOT NULL UNIQUE,
+    phone_number TEXT,
+    role         TEXT,
+    is_blocked   BOOLEAN,
+    created_at   TIMESTAMPTZ
+);
+
+CREATE TABLE cart (
+    cart_id         VARCHAR PRIMARY KEY,
+    user_id         VARCHAR NOT NULL,
+    created_at      TIMESTAMPTZ,
+    last_updated_at TIMESTAMPTZ,
+    total_amount    BIGINT,
+    total_weight    DOUBLE PRECISION,
+    CONSTRAINT fk_cart_user
+        FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+);
+
+CREATE TABLE cart_item (
+    cart_item_id VARCHAR PRIMARY KEY,
+    cart_id      VARCHAR NOT NULL,
+    product_id   VARCHAR NOT NULL,
+    quantity     INTEGER,
+    unit_price   BIGINT,
+    sub_total    BIGINT
+    -- FK tới cart & product sẽ khai báo sau khi tạo bảng product
+);
+
+CREATE TABLE customer_order (
+    order_id            VARCHAR PRIMARY KEY,
+    user_id             VARCHAR NOT NULL,
+    created_at          TIMESTAMPTZ,
+    status              VARCHAR,
+    payment_status      VARCHAR,
+    total_product_price BIGINT,
+    vat_amount          BIGINT,
+    shipping_fee        BIGINT,
+    total_amount_to_pay BIGINT,
+    CONSTRAINT fk_order_user
+        FOREIGN KEY (user_id) REFERENCES app_user(user_id)
+);
+
+CREATE TABLE order_item (
+    order_item_id VARCHAR PRIMARY KEY,
+    order_id      VARCHAR NOT NULL,
+    product_id    VARCHAR NOT NULL,
+    quantity      INTEGER,
+    unit_price    BIGINT,
+    sub_total     BIGINT
+    -- FK tới customer_order & product sẽ khai báo sau
+);
+
+CREATE TABLE delivery_info (
+    delivery_info_id VARCHAR PRIMARY KEY,
+    order_id         VARCHAR NOT NULL UNIQUE,
+    receiver_name    TEXT,
+    phone_number     TEXT,
+    address_line     TEXT,
+    city             TEXT,
+    province         TEXT,
+    region_type      VARCHAR,
+    shipping_fee     BIGINT,
+    CONSTRAINT fk_delivery_order
+        FOREIGN KEY (order_id) REFERENCES customer_order(order_id)
+);
+
+CREATE TABLE vietqr (
+    vietqr_id      SERIAL PRIMARY KEY,
+    provider_name  TEXT,
+    bank_code      TEXT,
+    account_number TEXT,
+    merchant_id    TEXT,
+    callback_url   TEXT
+);
+
+CREATE TABLE payment_transaction (
+    transaction_id          VARCHAR PRIMARY KEY,
+    order_id                VARCHAR NOT NULL,
+    user_id                 VARCHAR NOT NULL,
+    amount                  BIGINT,
+    method                  VARCHAR,
+    provider_transaction_id TEXT,
+    status                  VARCHAR,
+    created_at              TIMESTAMPTZ,
+    message                 TEXT,
+    vietqr_id               INTEGER,
+    CONSTRAINT fk_payment_order
+        FOREIGN KEY (order_id) REFERENCES customer_order(order_id),
+    CONSTRAINT fk_payment_user
+        FOREIGN KEY (user_id) REFERENCES app_user(user_id),
+    CONSTRAINT fk_payment_vietqr
+        FOREIGN KEY (vietqr_id) REFERENCES vietqr(vietqr_id)
+);
+
+CREATE TABLE credit_card_info (
+    credit_card_info_id SERIAL PRIMARY KEY,
+    transaction_id      VARCHAR NOT NULL UNIQUE,
+    card_number         TEXT,
+    card_holder_name    TEXT,
+    expiry_month        SMALLINT,
+    expiry_year         SMALLINT,
+    cvv                 TEXT,
+    billing_address     TEXT,
+    CONSTRAINT fk_ccinfo_payment
+        FOREIGN KEY (transaction_id) REFERENCES payment_transaction(transaction_id)
+);
+
+-- ---------- PRODUCT DOMAIN (4 TYPES) ----------
+
+CREATE TABLE product (
+    product_id     VARCHAR PRIMARY KEY,
+    title          TEXT,
+    category       TEXT,
+    original_value BIGINT,
+    current_price  BIGINT,
+    weight         DOUBLE PRECISION,
+    height         DOUBLE PRECISION,
+    length         DOUBLE PRECISION,
+    width          DOUBLE PRECISION,
+    barcode        TEXT,
+    status         INTEGER,
+    description    TEXT,
+    img_url        TEXT
+);
+
+CREATE TABLE book (
+    product_id       VARCHAR PRIMARY KEY,
+    cover_type       TEXT,
+    nb_pages         INTEGER,
+    genre            TEXT,
+    publisher        TEXT,
+    publication_date DATE,
+    language         TEXT,
+    authors          TEXT,
+    CONSTRAINT fk_book_product
+        FOREIGN KEY (product_id) REFERENCES product(product_id)
+);
+
+CREATE TABLE cd (
+    product_id    VARCHAR PRIMARY KEY,
+    artist        TEXT,
+    record_label  TEXT,
+    music_type    TEXT,
+    release_date  DATE,
+    tracks        JSONB,
+    CONSTRAINT fk_cd_product
+        FOREIGN KEY (product_id) REFERENCES product(product_id)
+);
+
+CREATE TABLE dvd (
+    product_id    VARCHAR PRIMARY KEY,
+    disc_type     TEXT,
+    director      TEXT,
+    runtime       INTEGER,
+    studio        TEXT,
+    subtitle      TEXT,
+    release_date  DATE,
+    CONSTRAINT fk_dvd_product
+        FOREIGN KEY (product_id) REFERENCES product(product_id)
+);
+
+CREATE TABLE newspaper (
+    product_id            VARCHAR PRIMARY KEY,
+    publisher             TEXT,
+    editor_in_chief       TEXT,
+    issue_number          TEXT,
+    publication_date      DATE,
+    publication_frequency DOUBLE PRECISION,
+    language              TEXT,
+    issn                  TEXT,
+    sections              TEXT,
+    CONSTRAINT fk_newspaper_product
+        FOREIGN KEY (product_id) REFERENCES product(product_id)
+);
+
+-- ---------- ADD FK FROM CART_ITEM & ORDER_ITEM TO PRODUCT / CART / ORDER ----------
+
+ALTER TABLE cart_item
+    ADD CONSTRAINT fk_cart_item_cart
+        FOREIGN KEY (cart_id) REFERENCES cart(cart_id),
+    ADD CONSTRAINT fk_cart_item_product
+        FOREIGN KEY (product_id) REFERENCES product(product_id);
+
+ALTER TABLE order_item
+    ADD CONSTRAINT fk_order_item_order
+        FOREIGN KEY (order_id) REFERENCES customer_order(order_id),
+    ADD CONSTRAINT fk_order_item_product
+        FOREIGN KEY (product_id) REFERENCES product(product_id);
+
+-- ---------- OPTIONAL INDEXES FOR FK COLUMNS ----------
+
+CREATE INDEX idx_cart_user           ON cart(user_id);
+CREATE INDEX idx_cart_item_cart      ON cart_item(cart_id);
+CREATE INDEX idx_cart_item_product   ON cart_item(product_id);
+CREATE INDEX idx_order_user          ON customer_order(user_id);
+CREATE INDEX idx_order_item_order    ON order_item(order_id);
+CREATE INDEX idx_order_item_product  ON order_item(product_id);
+CREATE INDEX idx_delivery_order      ON delivery_info(order_id);
+CREATE INDEX idx_payment_order       ON payment_transaction(order_id);
+CREATE INDEX idx_payment_user        ON payment_transaction(user_id);
+CREATE INDEX idx_payment_vietqr      ON payment_transaction(vietqr_id);
