@@ -1,0 +1,34 @@
+package com.ecommerce.aims.order.dto;
+
+import com.ecommerce.aims.order.models.DeliveryInfo;
+import com.ecommerce.aims.order.models.OrderStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class OrderResponse {
+    private Long id;
+    private OrderStatus status;
+    private String customerEmail;
+    private String customerName;
+    private DeliveryInfo deliveryInfo;
+    private BigDecimal shippingFee;
+    private BigDecimal totalBeforeVat;
+    private BigDecimal totalWithVat;
+    private LocalDateTime createdAt;
+    private List<OrderLine> items;
+
+    @Data
+    @Builder
+    public static class OrderLine {
+        private Long productId;
+        private String productTitle;
+        private Integer quantity;
+        private BigDecimal price;
+        private BigDecimal totalPrice;
+    }
+}

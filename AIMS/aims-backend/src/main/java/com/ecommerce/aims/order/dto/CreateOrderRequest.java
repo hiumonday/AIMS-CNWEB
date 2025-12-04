@@ -1,0 +1,58 @@
+package com.ecommerce.aims.order.dto;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
+import java.util.List;
+import lombok.Data;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Data
+public class CreateOrderRequest {
+    @Schema(example = "customer@example.com")
+    @Email
+    @NotBlank
+    private String customerEmail;
+    @Schema(example = "Nguyen Van A")
+    @NotBlank
+    private String customerName;
+    @Schema(example = "0901234567")
+    @NotBlank
+    private String phone;
+    @Schema(example = "123 Street")
+    @NotBlank
+    private String addressLine;
+    @Schema(example = "Ha Noi")
+    @NotBlank
+    private String city;
+    @Schema(example = "Ha Noi")
+    @NotBlank
+    private String province;
+    @Schema(example = "100000")
+    @NotBlank
+    private String postalCode;
+    @Schema(example = "25000")
+    private BigDecimal shippingFee;
+    @NotEmpty
+    @Valid
+    private List<OrderItemRequest> items;
+
+    @Data
+    public static class OrderItemRequest {
+        @Schema(example = "1")
+        @NotNull
+        private Long productId;
+        private String productTitle;
+        @Schema(example = "2")
+        @NotNull
+        @Min(1)
+        private Integer quantity;
+        @Schema(example = "120000")
+        @Min(0)
+        private BigDecimal price;
+    }
+}
