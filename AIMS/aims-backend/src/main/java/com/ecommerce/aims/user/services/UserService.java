@@ -6,6 +6,7 @@ import com.ecommerce.aims.common.exception.NotFoundException;
 import com.ecommerce.aims.user.dto.UserRequest;
 import com.ecommerce.aims.user.dto.UserResponse;
 import com.ecommerce.aims.user.models.Role;
+import com.ecommerce.aims.user.models.RoleName;
 import com.ecommerce.aims.user.models.User;
 import com.ecommerce.aims.user.models.UserStatus;
 import com.ecommerce.aims.user.repository.RoleRepository;
@@ -106,8 +107,15 @@ public class UserService {
             return new HashSet<>();
         }
         return roleNames.stream()
-            .map(name -> roleRepository.findByName(name)
-                .orElseGet(() -> roleRepository.save(Role.builder().name(name).build())))
+            .map(name -> {
+                try {
+                    RoleName roleName = RoleName.valueOf(name);
+                    return roleRepository.findByName(roleName)
+                        .orElseGet(() -> roleRepository.save(Role.builder().name(roleName).build()));
+                } catch (IllegalArgumentException e) {
+                    throw new BusinessException("Invalid role name: " + name);
+                }
+            })
             .collect(Collectors.toSet());
     }
 
@@ -116,7 +124,9 @@ public class UserService {
             .id(user.getId())
             .email(user.getEmail())
             .status(user.getStatus())
-            .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+            .roles(user.getRoles().stream()
+                .map(role -> role.getName().name())
+                .collect(Collectors.toSet()))
             .build();
     }
 }
