@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { listProducts } from "../services/productService";
@@ -7,7 +7,8 @@ import "./ProductListPage.css";
 
 type SortKey = "title" | "price-asc" | "price-desc";
 
-const itemsPerPage = 20;
+const itemsPerPage = 9;
+const PRICE_FILTER_FACTOR = 1000; // Keep display currency consistent with backend amounts
 const categories: Array<Category | "All"> = [
   "All",
   "Book",
@@ -22,68 +23,89 @@ const priceRanges = [
   { label: "$20 - $30", value: "20-30" },
 ];
 
+const sortKeyToParam = (key: SortKey) => {
+  if (key === "price-asc") return "priceAsc";
+  if (key === "price-desc") return "priceDesc";
+  return "title";
+};
+
+const priceBandToRange = (
+  band: string
+): { min?: number; max?: number } => {
+  switch (band) {
+    case "<10":
+      return { max: 10 };
+    case "10-20":
+      return { min: 10, max: 20 };
+    case "20-30":
+      return { min: 20, max: 30 };
+    default:
+      return {};
+  }
+};
+
 const ProductListPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const initialCategory =
     (searchParams.get("category") as Category | null) || "All";
 
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category | "All">(initialCategory);
   const [sort, setSort] = useState<SortKey>("title");
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [pageSize, setPageSize] = useState(itemsPerPage);
   const [priceBand, setPriceBand] = useState<string>("all");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const { addItem } = useCart();
-
-  useEffect(() => {
-    setLoading(true);
-    listProducts({}).then((result) => {
-      setAllProducts(result.items);
-      setLoading(false);
-    });
-  }, []);
 
   useEffect(() => {
     setCategory(initialCategory);
     setPage(1);
   }, [initialCategory]);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    let list: Product[] = allProducts;
-    if (category !== "All") {
-      list = list.filter((item) => item.category === category);
-    }
-    if (q) {
-      list = list.filter((item) => item.title.toLowerCase().includes(q));
-    }
-    if (priceBand !== "all") {
-      list = list.filter((item) => {
-        if (priceBand === "<10") return item.price < 10;
-        if (priceBand === "10-20") return item.price >= 10 && item.price <= 20;
-        if (priceBand === "20-30") return item.price > 20 && item.price <= 30;
-        return true;
-      });
-    }
-    switch (sort) {
-      case "price-asc":
-        list = [...list].sort((a, b) => a.price - b.price);
-        break;
-      case "price-desc":
-        list = [...list].sort((a, b) => b.price - a.price);
-        break;
-      default:
-        list = [...list].sort((a, b) => a.title.localeCompare(b.title));
-    }
-    return list;
-  }, [allProducts, search, category, priceBand, sort]);
+  useEffect(() => {
+    const { min, max } = priceBandToRange(priceBand);
+    const minPrice =
+      min !== undefined ? min * PRICE_FILTER_FACTOR : undefined;
+    const maxPrice =
+      max !== undefined ? max * PRICE_FILTER_FACTOR : undefined;
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-  const startIndex = (page - 1) * itemsPerPage;
-  const current = filtered.slice(startIndex, startIndex + itemsPerPage);
+    setLoading(true);
+    setError(null);
+
+    listProducts({
+      page,
+      limit: pageSize,
+      query: search.trim() || undefined,
+      category,
+      minPrice,
+      maxPrice,
+      sort: sortKeyToParam(sort),
+    })
+      .then((result) => {
+        setProducts(result.items);
+        setTotal(result.total);
+        setPageSize(result.size || itemsPerPage);
+        if (result.page !== page) {
+          setPage(result.page);
+        }
+      })
+      .catch((err) => {
+        const message =
+          (err as any)?.message ||
+          (typeof err === "string" ? err : "Unable to load products.");
+        setError(message);
+        setProducts([]);
+      })
+      .finally(() => setLoading(false));
+  }, [page, category, search, priceBand, sort, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const handleCategoryChange = (value: Category | "All") => {
     setCategory(value);
@@ -100,7 +122,9 @@ const ProductListPage = () => {
       <header className="products-header">
         <div>
           <h1>AIMS Store</h1>
-          <p>Showing {filtered.length} products</p>
+          <p>
+            Page {page} of {totalPages} | {total} products
+          </p>
         </div>
         <div className="filters">
           <div className="search">
@@ -185,8 +209,13 @@ const ProductListPage = () => {
 
       <section className="grid">
         {loading && <p className="muted">Loading products...</p>}
+        {!loading && error && <p className="muted">{error}</p>}
+        {!loading && !error && products.length === 0 && (
+          <p className="muted">No products found.</p>
+        )}
         {!loading &&
-          current.map((item) => (
+          !error &&
+          products.map((item) => (
             <article key={item.id} className="card">
               <div className="card__img">
                 <img src={item.image} alt={item.title} />
@@ -262,7 +291,7 @@ const ProductListPage = () => {
       <div className="pagination">
         <button
           type="button"
-          disabled={page === 1}
+          disabled={loading || page === 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
         >
           Prev
@@ -272,7 +301,7 @@ const ProductListPage = () => {
         </span>
         <button
           type="button"
-          disabled={page === totalPages}
+          disabled={loading || page === totalPages}
           onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
         >
           Next
