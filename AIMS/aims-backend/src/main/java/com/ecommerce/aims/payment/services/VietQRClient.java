@@ -4,6 +4,7 @@ import com.ecommerce.aims.common.exception.BusinessException;
 import com.ecommerce.aims.payment.config.VietQrProperties;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Objects;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -32,6 +33,7 @@ public class VietQRClient {
     }
 
     public CreatePaymentLinkResponse createPaymentLink(CreatePaymentLinkRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
         try {
             return payOS.paymentRequests().create(request);
         } catch (Exception e) {
@@ -42,16 +44,16 @@ public class VietQRClient {
     public VietQrCreateResponse createQr(Long orderId, BigDecimal amount, String description) {
         try {
             VietQrCreateRequest payload = new VietQrCreateRequest();
-            payload.setOrderId(orderId);
-            payload.setAmount(amount.setScale(0, RoundingMode.HALF_UP));
+            payload.setOrderId(Objects.requireNonNull(orderId, "orderId must not be null"));
+            payload.setAmount(Objects.requireNonNull(amount, "amount must not be null").setScale(0, RoundingMode.HALF_UP));
             payload.setDescription(description);
             return client()
                     .post()
                     .uri("/v2/generate")
-                    .header("x-client-id", properties.getClientId())
-                    .header("x-api-key", properties.getApiKey())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(payload)
+                    .header("x-client-id", Objects.requireNonNull(properties.getClientId(), "clientId must not be null"))
+                    .header("x-api-key", Objects.requireNonNull(properties.getApiKey(), "apiKey must not be null"))
+                    .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON, "mediaType must not be null"))
+                    .bodyValue(Objects.requireNonNull(payload, "payload must not be null"))
                     .retrieve()
                     .bodyToMono(VietQrCreateResponse.class)
                     .block();
@@ -61,7 +63,7 @@ public class VietQRClient {
     }
 
     private WebClient client() {
-        return webClientBuilder.baseUrl(properties.getBaseUrl()).build();
+        return webClientBuilder.baseUrl(Objects.requireNonNull(properties.getBaseUrl(), "baseUrl must not be null")).build();
     }
 
     @Data

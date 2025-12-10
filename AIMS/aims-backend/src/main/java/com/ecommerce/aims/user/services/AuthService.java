@@ -11,6 +11,7 @@ import com.ecommerce.aims.user.models.User;
 import com.ecommerce.aims.user.models.UserPrincipal;
 import com.ecommerce.aims.user.repository.UserRepository;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -36,6 +37,7 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
         log.info("Login attempt email={}", request.getEmail());
         
         try {
@@ -67,6 +69,7 @@ public class AuthService {
     
     @Transactional
     public AuthResponse refreshAccessToken(String refreshTokenStr) {
+        Objects.requireNonNull(refreshTokenStr, "refreshToken must not be null");
         // Validate refresh token
         if (!jwtService.isRefreshToken(refreshTokenStr)) {
             throw new BusinessException("Invalid refresh token");
@@ -104,7 +107,9 @@ public class AuthService {
 
     @Transactional
     public UserResponse changePassword(Long userId, ChangePasswordRequest request) {
-        User user = userRepository.findById(userId)
+        Long id = Objects.requireNonNull(userId, "userId must not be null");
+        Objects.requireNonNull(request, "request must not be null");
+        User user = userRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
         if (user.getStatus() == com.ecommerce.aims.user.models.UserStatus.LOCKED) {
             throw new BusinessException("User is locked");

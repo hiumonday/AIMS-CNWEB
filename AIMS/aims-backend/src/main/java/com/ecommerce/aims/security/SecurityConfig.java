@@ -47,21 +47,21 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
-                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 
                 // Product browsing (public)
-                .requestMatchers("GET", "/products/**").permitAll()
-                .requestMatchers("GET", "/categories/**").permitAll()
-                .requestMatchers("GET", "/search/**").permitAll()
+                .requestMatchers("GET", "/products/**", "/api/products/**").permitAll()
+                .requestMatchers("GET", "/categories/**", "/api/categories/**").permitAll()
+                .requestMatchers("GET", "/search/**", "/api/search/**").permitAll()
                 
                 // Cart and checkout (public for anonymous customers)
-                .requestMatchers("POST", "/cart/**").permitAll()
-                .requestMatchers("POST", "/checkout/**").permitAll()
-                .requestMatchers("POST", "/orders/create").permitAll()
+                .requestMatchers("/cart/**", "/api/cart/**").permitAll()
+                .requestMatchers("/checkout/**", "/api/checkout/**").permitAll()
+                .requestMatchers("/orders/**", "/api/orders/**").permitAll()
                 
                 // Payment callbacks (public but should verify signatures in controller)
-                .requestMatchers("/payment/callback/**").permitAll()
+                .requestMatchers("/payment/callback/**", "/api/payment/callback/**").permitAll()
                 
                 // Admin-only endpoints
                 .requestMatchers("/api/admin/users/**").hasRole("ADMIN")

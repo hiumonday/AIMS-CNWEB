@@ -12,6 +12,7 @@ import com.ecommerce.aims.user.models.UserStatus;
 import com.ecommerce.aims.user.repository.RoleRepository;
 import com.ecommerce.aims.user.repository.UserRepository;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class UserService {
 
     @Transactional
     public UserResponse createUser(UserRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
         if (request.getEmail() == null || request.getPassword() == null) {
             throw new BusinessException("Email and password are required");
         }
@@ -47,11 +49,13 @@ public class UserService {
 
     @Transactional
     public UserResponse updateUser(Long id, UserRequest request) {
-        User user = userRepository.findById(id)
+        Long requiredId = Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(request, "request must not be null");
+        User user = userRepository.findById(requiredId)
             .orElseThrow(() -> new NotFoundException("User not found"));
         if (request.getEmail() != null) {
             userRepository.findByEmail(request.getEmail()).ifPresent(existing -> {
-                if (!existing.getId().equals(id)) {
+                if (!existing.getId().equals(requiredId)) {
                     throw new BusinessException("Email already exists");
                 }
             });
@@ -70,7 +74,8 @@ public class UserService {
     }
 
     public UserResponse getUser(Long id) {
-        return userRepository.findById(id)
+        Long requiredId = Objects.requireNonNull(id, "id must not be null");
+        return userRepository.findById(requiredId)
             .map(this::toResponse)
             .orElseThrow(() -> new NotFoundException("User not found"));
     }
@@ -88,7 +93,8 @@ public class UserService {
 
     @Transactional
     public UserResponse lockUser(Long id) {
-        User user = userRepository.findById(id)
+        Long requiredId = Objects.requireNonNull(id, "id must not be null");
+        User user = userRepository.findById(requiredId)
             .orElseThrow(() -> new NotFoundException("User not found"));
         user.setStatus(UserStatus.LOCKED);
         return toResponse(userRepository.save(user));
@@ -96,7 +102,8 @@ public class UserService {
 
     @Transactional
     public UserResponse unlockUser(Long id) {
-        User user = userRepository.findById(id)
+        Long requiredId = Objects.requireNonNull(id, "id must not be null");
+        User user = userRepository.findById(requiredId)
             .orElseThrow(() -> new NotFoundException("User not found"));
         user.setStatus(UserStatus.ACTIVE);
         return toResponse(userRepository.save(user));
@@ -120,11 +127,13 @@ public class UserService {
     }
 
     private UserResponse toResponse(User user) {
+        User requiredUser = Objects.requireNonNull(user, "user must not be null");
+        Set<Role> roles = requiredUser.getRoles() == null ? Set.of() : requiredUser.getRoles();
         return UserResponse.builder()
-            .id(user.getId())
-            .email(user.getEmail())
-            .status(user.getStatus())
-            .roles(user.getRoles().stream()
+            .id(requiredUser.getId())
+            .email(requiredUser.getEmail())
+            .status(requiredUser.getStatus())
+            .roles(roles.stream()
                 .map(role -> role.getName().name())
                 .collect(Collectors.toSet()))
             .build();

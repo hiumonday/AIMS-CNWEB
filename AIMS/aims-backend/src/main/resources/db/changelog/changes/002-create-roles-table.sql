@@ -1,7 +1,7 @@
 --liquibase formatted sql
 
 --changeset aims:002-create-roles-table
-CREATE TABLE roles (
+CREATE TABLE IF NOT EXISTS roles (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE
 );

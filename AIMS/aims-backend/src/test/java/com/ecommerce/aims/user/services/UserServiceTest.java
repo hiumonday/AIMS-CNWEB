@@ -19,14 +19,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("DataFlowIssue")
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService Unit Tests")
 class UserServiceTest {
@@ -43,10 +46,10 @@ class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
-    private User testUser;
-    private Role customerRole;
-    private Role adminRole;
-    private UserRequest userRequest;
+    private User testUser = new User();
+    private Role customerRole = new Role();
+    private Role adminRole = new Role();
+    private UserRequest userRequest = new UserRequest();
 
     @BeforeEach
     void setUp() {
@@ -86,7 +89,7 @@ class UserServiceTest {
         when(userRepository.findByEmail("newuser@aims.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("password123")).thenReturn("$2a$10$encodedPassword");
         when(roleRepository.findByName(RoleName.ROLE_CUSTOMER)).thenReturn(Optional.of(customerRole));
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+        when(userRepository.save(argThat(Objects::nonNull))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
             user.setId(2L);
             return user;
@@ -105,7 +108,7 @@ class UserServiceTest {
         verify(userRepository).findByEmail("newuser@aims.com");
         verify(passwordEncoder).encode("password123");
         verify(roleRepository).findByName(RoleName.ROLE_CUSTOMER);
-        verify(userRepository).save(any(User.class));
+        verify(userRepository).save(argThat(Objects::nonNull));
     }
 
     @Test

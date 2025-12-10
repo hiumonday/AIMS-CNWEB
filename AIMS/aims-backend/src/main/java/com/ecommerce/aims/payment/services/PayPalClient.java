@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -49,13 +50,13 @@ public class PayPalClient {
                 "intent", "CAPTURE",
                 "purchase_units", List.of(Map.of(
                     "amount", Map.of(
-                        "currency_code", currency,
-                        "value", amount.setScale(2, RoundingMode.HALF_UP).toString()
+                        "currency_code", Objects.requireNonNull(currency, "currency must not be null"),
+                        "value", Objects.requireNonNull(amount, "amount must not be null").setScale(2, RoundingMode.HALF_UP).toString()
                     )
                 )),
                 "application_context", Map.of(
-                    "return_url", successUrl,
-                    "cancel_url", cancelUrl
+                    "return_url", Objects.requireNonNull(successUrl, "successUrl must not be null"),
+                    "cancel_url", Objects.requireNonNull(cancelUrl, "cancelUrl must not be null")
                 )
             );
             return client()
@@ -63,7 +64,7 @@ public class PayPalClient {
                 .uri("/v2/checkout/orders")
                 .headers(h -> h.setBearerAuth(token))
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(payload)
+                .bodyValue(Objects.requireNonNull(payload, "payload must not be null"))
                 .retrieve()
                 .bodyToMono(PayPalOrderResponse.class)
                 .block();
@@ -77,7 +78,7 @@ public class PayPalClient {
         try {
             return client()
                 .post()
-                .uri("/v2/checkout/orders/{orderId}/capture", orderId)
+                .uri("/v2/checkout/orders/{orderId}/capture", Objects.requireNonNull(orderId, "orderId must not be null"))
                 .headers(h -> h.setBearerAuth(token))
                 .retrieve()
                 .bodyToMono(PayPalOrderResponse.class)
@@ -92,16 +93,16 @@ public class PayPalClient {
         try {
             Map<String, Object> payload = Map.of(
                 "amount", Map.of(
-                    "value", amount.setScale(2, RoundingMode.HALF_UP).toString(),
-                    "currency_code", currency
+                    "value", Objects.requireNonNull(amount, "amount must not be null").setScale(2, RoundingMode.HALF_UP).toString(),
+                    "currency_code", Objects.requireNonNull(currency, "currency must not be null")
                 )
             );
             return client()
                 .post()
-                .uri("/v2/payments/captures/{captureId}/refund", captureId)
+                .uri("/v2/payments/captures/{captureId}/refund", Objects.requireNonNull(captureId, "captureId must not be null"))
                 .headers(h -> h.setBearerAuth(token))
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(payload)
+                .bodyValue(Objects.requireNonNull(payload, "payload must not be null"))
                 .retrieve()
                 .bodyToMono(PayPalRefundResponse.class)
                 .block();

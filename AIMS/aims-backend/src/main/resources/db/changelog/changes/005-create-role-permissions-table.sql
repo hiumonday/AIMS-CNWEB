@@ -1,7 +1,7 @@
 --liquibase formatted sql
 
 --changeset aims:005-create-role-permissions-table
-CREATE TABLE role_permissions (
+CREATE TABLE IF NOT EXISTS role_permissions (
     role_id BIGINT NOT NULL,
     permission_id BIGINT NOT NULL,
     PRIMARY KEY (role_id, permission_id),

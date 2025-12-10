@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -34,6 +35,7 @@ public class OrderService {
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new BusinessException("Order items must not be empty");
         }
@@ -99,21 +101,24 @@ public class OrderService {
     }
 
     public OrderResponse getOrder(Long id) {
-        Order order = orderRepository.findById(id)
+        Long requiredId = Objects.requireNonNull(id, "id must not be null");
+        Order order = orderRepository.findById(requiredId)
             .orElseThrow(() -> new NotFoundException("Order not found"));
         return toResponse(order);
     }
 
     @Transactional
     public OrderResponse cancelOrder(Long id) {
-        Order order = orderRepository.findById(id)
+        Long requiredId = Objects.requireNonNull(id, "id must not be null");
+        Order order = orderRepository.findById(requiredId)
             .orElseThrow(() -> new NotFoundException("Order not found"));
         if (order.getStatus() != OrderStatus.PENDING_PROCESSING && order.getStatus() != OrderStatus.PAID) {
             throw new BusinessException("Order cannot be cancelled at this stage");
         }
         order.setStatus(OrderStatus.CANCELLED);
         order.getItems().forEach(item -> {
-            productRepository.findById(item.getProductId()).ifPresent(product -> {
+            Long productId = Objects.requireNonNull(item.getProductId(), "productId must not be null");
+            productRepository.findById(productId).ifPresent(product -> {
                 product.setStock(product.getStock() + item.getQuantity());
                 productRepository.save(product);
             });
@@ -134,17 +139,18 @@ public class OrderService {
     }
 
     private OrderResponse toResponse(Order order) {
+        Order requiredOrder = Objects.requireNonNull(order, "order must not be null");
         return OrderResponse.builder()
-            .id(order.getId())
-            .status(order.getStatus())
-            .customerEmail(order.getCustomerEmail())
-            .customerName(order.getCustomerName())
-            .deliveryInfo(order.getDeliveryInfo())
-            .shippingFee(order.getShippingFee())
-            .totalBeforeVat(order.getTotalBeforeVat())
-            .totalWithVat(order.getTotalWithVat())
-            .createdAt(order.getCreatedAt())
-            .items(order.getItems().stream()
+            .id(requiredOrder.getId())
+            .status(requiredOrder.getStatus())
+            .customerEmail(requiredOrder.getCustomerEmail())
+            .customerName(requiredOrder.getCustomerName())
+            .deliveryInfo(requiredOrder.getDeliveryInfo())
+            .shippingFee(requiredOrder.getShippingFee())
+            .totalBeforeVat(requiredOrder.getTotalBeforeVat())
+            .totalWithVat(requiredOrder.getTotalWithVat())
+            .createdAt(requiredOrder.getCreatedAt())
+            .items(requiredOrder.getItems().stream()
                 .map(item -> OrderResponse.OrderLine.builder()
                     .productId(item.getProductId())
                     .productTitle(item.getProductTitle())
@@ -159,8 +165,9 @@ public class OrderService {
     private Map<Long, Product> loadAndValidateProducts(CreateOrderRequest request) {
         Map<Long, Product> productMap = new HashMap<>();
         request.getItems().forEach(line -> {
-            Product product = productRepository.findById(line.getProductId())
-                .orElseThrow(() -> new NotFoundException("Product not found: " + line.getProductId()));
+            Long productId = Objects.requireNonNull(line.getProductId(), "productId must not be null");
+            Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("Product not found: " + productId));
             if (product.getStatus() == ProductStatus.DEACTIVATED) {
                 throw new BusinessException("Product is deactivated: " + product.getTitle());
             }
@@ -168,7 +175,7 @@ public class OrderService {
                 int stock = product.getStock() == null ? 0 : product.getStock();
                 throw new BusinessException("Not enough stock for product " + product.getTitle() + ". Shortage: " + (line.getQuantity() - stock));
             }
-            productMap.put(line.getProductId(), product);
+            productMap.put(productId, product);
         });
         return productMap;
     }

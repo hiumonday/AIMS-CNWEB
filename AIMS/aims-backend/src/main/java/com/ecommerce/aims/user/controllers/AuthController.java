@@ -4,7 +4,6 @@ import com.ecommerce.aims.common.dto.ApiResponse;
 import com.ecommerce.aims.user.dto.AuthResponse;
 import com.ecommerce.aims.user.dto.ChangePasswordRequest;
 import com.ecommerce.aims.user.dto.LoginRequest;
-import com.ecommerce.aims.user.dto.RefreshTokenRequest;
 import com.ecommerce.aims.user.dto.UserRequest;
 import com.ecommerce.aims.user.dto.UserResponse;
 import com.ecommerce.aims.user.services.AuthService;
@@ -16,10 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Duration;
-
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -89,7 +86,20 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ApiResponse<UserResponse> register(@Valid @RequestBody UserRequest request) {
-        return ApiResponse.success(userService.createUser(request), "User registered");
+    public ApiResponse<AuthResponse> register(
+        @Valid @RequestBody UserRequest request,
+        HttpServletResponse response
+    ) {
+        // Create user first
+        userService.createUser(request);
+
+        // Auto-login newly registered user
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setEmail(request.getEmail());
+        loginRequest.setPassword(request.getPassword());
+        AuthResponse authResponse = authService.login(loginRequest);
+
+        setRefreshTokenCookie(response, authResponse.getRefreshToken());
+        return ApiResponse.success(authResponse, "User registered and logged in");
     }
 }

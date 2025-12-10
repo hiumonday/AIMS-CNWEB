@@ -1,7 +1,7 @@
 --liquibase formatted sql
 
 --changeset aims:003-create-permissions-table
-CREATE TABLE permissions (
+CREATE TABLE IF NOT EXISTS permissions (
     id BIGSERIAL PRIMARY KEY,
     object VARCHAR(50) NOT NULL,
     action VARCHAR(50) NOT NULL,

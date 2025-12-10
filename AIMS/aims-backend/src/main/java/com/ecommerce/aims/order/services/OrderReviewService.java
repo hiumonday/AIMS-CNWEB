@@ -9,6 +9,7 @@ import com.ecommerce.aims.order.dto.OrderSummaryResponse;
 import com.ecommerce.aims.order.models.Order;
 import com.ecommerce.aims.order.models.OrderStatus;
 import com.ecommerce.aims.order.repository.OrderRepository;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,7 +36,8 @@ public class OrderReviewService {
 
     @Transactional
     public OrderSummaryResponse approve(Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        Long id = Objects.requireNonNull(orderId, "orderId must not be null");
+        Order order = orderRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Order not found"));
         if (order.getStatus() != OrderStatus.PENDING_PROCESSING) {
             throw new BusinessException("Only pending orders can be approved");
@@ -50,7 +52,8 @@ public class OrderReviewService {
 
     @Transactional
     public OrderSummaryResponse reject(Long orderId, String reason) {
-        Order order = orderRepository.findById(orderId)
+        Long id = Objects.requireNonNull(orderId, "orderId must not be null");
+        Order order = orderRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Order not found"));
         if (order.getStatus() != OrderStatus.PENDING_PROCESSING) {
             throw new BusinessException("Only pending orders can be rejected");
@@ -64,13 +67,14 @@ public class OrderReviewService {
     }
 
     private OrderSummaryResponse toSummary(Order order) {
+        Order requiredOrder = java.util.Objects.requireNonNull(order, "order must not be null");
         return OrderSummaryResponse.builder()
-            .id(order.getId())
-            .status(order.getStatus())
-            .customerName(order.getCustomerName())
-            .customerEmail(order.getCustomerEmail())
-            .totalWithVat(order.getTotalWithVat())
-            .createdAt(order.getCreatedAt())
+            .id(requiredOrder.getId())
+            .status(requiredOrder.getStatus())
+            .customerName(requiredOrder.getCustomerName())
+            .customerEmail(requiredOrder.getCustomerEmail())
+            .totalWithVat(requiredOrder.getTotalWithVat())
+            .createdAt(requiredOrder.getCreatedAt())
             .build();
     }
 }

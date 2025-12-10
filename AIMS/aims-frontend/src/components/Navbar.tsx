@@ -28,9 +28,14 @@ const Navbar: FC = () => {
             Log out
           </button>
         ) : (
-          <Link className="btn light" to="/login">
-            Log in
-          </Link>
+          <>
+            <Link className="btn light" to="/login">
+              Log in
+            </Link>
+            <Link className="btn primary" to="/register" style={{ marginLeft: '8px' }}>
+              Register
+            </Link>
+          </>
         )}
         <Link className="nav__cart" to="/cart">
           <svg

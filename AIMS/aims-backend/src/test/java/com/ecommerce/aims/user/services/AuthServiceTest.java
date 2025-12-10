@@ -27,7 +27,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,6 +36,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("DataFlowIssue")
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuthService Unit Tests")
 class AuthServiceTest {
@@ -56,8 +56,8 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
-    private User testUser;
-    private Role adminRole;
+    private User testUser = new User();
+    private Role adminRole = new Role();
     private LoginRequest loginRequest;
     private Authentication authentication;
     private UserPrincipal userPrincipal;
