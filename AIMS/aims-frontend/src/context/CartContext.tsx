@@ -7,7 +7,6 @@ import {
   type FC,
   type ReactNode,
 } from "react";
-import { products } from "../data/products";
 import type { Product } from "../types";
 import cartService from "../services/cartService";
 import { getProductById } from "../services/productService";
@@ -52,9 +51,7 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
         // Identify missing products
         const missingIds = cart.items
           .map((item) => String(item.productId))
-          .filter(
-            (id) => !products.find((p) => p.id === id) && !cartProducts[id]
-          );
+          .filter((id) => !cartProducts[id]);
 
         console.log("Missing product IDs:", missingIds);
 
@@ -90,15 +87,13 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const addItem = async (productId: string, qty = 1) => {
     try {
       // Get product details for price
-      let product = products.find((p) => p.id === productId);
+      let product: Product | null = cartProducts[productId] ?? null;
       if (!product) {
-        product = (await getProductById(productId)) || undefined;
-        if (product) {
-          setCartProducts((prev) => ({ ...prev, [productId]: product! }));
-        }
+        const fetched = await getProductById(productId);
+        if (!fetched) return;
+        product = fetched;
+        setCartProducts((prev) => ({ ...prev, [productId]: fetched }));
       }
-
-      if (!product) return;
 
       // Call backend
       const updatedCart = await cartService.addItem(sessionKey, {
@@ -139,15 +134,13 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
 
     try {
-      let product = products.find((p) => p.id === productId);
+      let product: Product | null = cartProducts[productId] ?? null;
       if (!product) {
-        product = (await getProductById(productId)) || undefined;
-        if (product) {
-          setCartProducts((prev) => ({ ...prev, [productId]: product! }));
-        }
+        const fetched = await getProductById(productId);
+        if (!fetched) return;
+        product = fetched;
+        setCartProducts((prev) => ({ ...prev, [productId]: fetched }));
       }
-
-      if (!product) return;
 
       const maxQty = product.stock;
       const finalQty = Math.max(0, Math.min(maxQty, qty));
@@ -176,7 +169,7 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
         prev
           .map((i) => {
             if (i.productId !== productId) return i;
-            const product = products.find((p) => p.id === productId) || cartProducts[productId];
+            const product = cartProducts[productId];
             const maxQty = product ? product.stock : qty;
             return { ...i, qty: Math.max(0, Math.min(maxQty, qty)) };
           })
@@ -210,9 +203,7 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
     () =>
       items
         .map((item) => {
-          const product =
-            products.find((p) => p.id === item.productId) ||
-            cartProducts[item.productId];
+          const product = cartProducts[item.productId];
           return product ? { ...item, product } : null;
         })
         .filter((x): x is CartItem & { product: Product } => Boolean(x)),
