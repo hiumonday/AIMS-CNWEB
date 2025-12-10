@@ -58,3 +58,22 @@ Tuần 9:
     + Làm Authorization
     + review code của cả nhóm
     + check cohension & coupling
+
+Tuần 10:
+
+Trần Phạm Minh Đức
+
+Hoàn thiện UI/UX ProductList & ProductDetail: đồng bộ query param page/size lên URL, bổ sung filter nâng cao (giá min/max, sort) bám API mới.
+Viết test/kiểm thử thủ công luồng xem chi tiết + thêm vào giỏ, bảo đảm mapping CD/DVD/Newspaper hiển thị đúng tất cả trường backend.
+Nguyễn Trung Hiếu
+
+Ổn định layer Order/Cart: rà soát Place Order + VietQR callback, viết migration script mẫu (schema + dữ liệu seed tối thiểu).
+Thêm log/alert khi gọi thanh toán thất bại; cập nhật tài liệu DB/migration.
+Nguyễn Minh Quang
+
+Hoàn thiện PayPal & VietQR: bổ sung kiểm tra trạng thái giao dịch (polling/webhook), xử lý các edge case (expired, cancelled).
+Viết hướng dẫn tích hợp thanh toán (các endpoint, request/response) và test các flow chính.
+Đỗ Gia Huy
+
+Hoàn thiện Authentication/Authorization: bảo vệ route nhạy cảm, refresh token/cookie flow, kiểm tra cohesion/coupling sau các thay đổi.
+Review code toàn nhóm tuần 10, đảm bảo thống nhất style/logging/tên trường theo backend; cập nhật README/changelog ngắn cho release tuần.
