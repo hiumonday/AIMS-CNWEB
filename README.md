@@ -22,14 +22,39 @@ Mục tiêu của phần này là:
 Tuần 8:
 - Trần Phạm Minh Đức:
     + src/pages/ProductListPage.tsx: Trang danh sách chuyển sang gọi API backend /products với phân trang server-side; giữ state page, pageSize, total và filter (search, category, price band) rồi truyền vào listProducts. Hiển thị số trang/sản phẩm từ backend, loading/error state, và cập nhật page theo kết quả trả về.
-    + src/services/productService.ts: Hàm listProducts map params sang page (0-based) và size cho backend; getProductById gọi /products/{id}. Mapping sản phẩm bổ sung đầy đủ detail cho từng loại (Book, CD, DVD, Newspaper) theo trường backend:
-        + Book: authors, coverType, publisher, publishDate, pages, language, genre.
-        + CD: artist, recordLabel, trackList/track count từ chuỗi tracks, discType (default Unknown), releaseDate, genre.
-        + DVD: discType, director, runtimeMinutes/runtime, studio, language, subtitles, releaseDate, genre.
-        + Newspaper: editorInChief, publisher, publishDate/issueDate, issueNumber, sections, frequency, ISSN, language, genre/sections.
-        Thêm console log khi kết nối backend thành công và log lỗi khi call thất bại.
-    + src/pages/ViewProductDetail.tsx: Trang chi tiết lấy id từ route, gọi getProductById backend; có loading/error. Phần “Product Details” render theo loại:
-        + Book: Author(s), Cover Type, Publisher, Publication Date, Pages, Language, Genre.
-        + Newspaper: Editor-in-chief, Publisher, Publication Date, Issue Number, Frequency, Sections, ISSN, Language, Genre/Section.
-        + CD: Artist(s), Record Label, Disc Type, Tracks, Track List, Release Date, Genre.
-        + DVD: Disc Type, Director, Runtime, Studio, Language, Subtitles, Release Date, Genre.
+    + src/services/productService.ts: Hàm listProducts map params sang page (0-based) và size cho backend; getProductById gọi /products/{id}. Mapping sản phẩm bổ sung đầy đủ detail cho từng loại (Book, CD, DVD, Newspaper) theo trường backend
+    + src/pages/ViewProductDetail.tsx: Trang chi tiết lấy id từ route, gọi getProductById backend; có loading/error. Phần “Product Details” render theo loại
+    + làm API product
+
+- Nguyễn Trung Hiếu: 
+    + làm API để thanh toán bằng VietQR
+    + làm API Place Order
+
+- Nguyễn Minh Quang:
+    + Làm API Payment bằng Paypal
+    + Dựng code base
+- Đỗ Gia Huy:
+    + kết nối Frontend và backend
+    + làm Authentication
+
+Tuần 9: 
+
+- Trần Phạm Minh Đức:
+    + src/pages/ProductListPage.tsx: Trang danh sách chuyển sang gọi API backend /products với phân trang server-side; giữ state page, pageSize, total và filter (search, category, price band) rồi truyền vào listProducts. Hiển thị số trang/sản phẩm từ backend, loading/error state, và cập nhật page theo kết quả trả về.
+    + src/services/productService.ts: Hàm listProducts map params sang page (0-based) và size cho backend; getProductById gọi /products/{id}. Mapping sản phẩm bổ sung đầy đủ detail cho từng loại (Book, CD, DVD, Newspaper) theo trường backend
+    + Thêm console log khi kết nối backend thành công và log lỗi khi call thất bại.
+    src/pages/ViewProductDetail.tsx: Trang chi tiết lấy id từ route, gọi getProductById backend; có loading/error. Phần “Product Details” render theo loại
+- Nguyễn Trung Hiếu:
+    + review order code
+    + nghiên cứu migration tool
+    + nghiên cứu database
+
+- Nguyễn Minh Quang:
+    + update VietQR Payment API
+    + Pooling Transaction Status
+
+- Đỗ Gia Huy:
+
+    + Làm Authorization
+    + review code của cả nhóm
+    + check cohension & coupling
