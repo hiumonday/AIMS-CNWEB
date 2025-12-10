@@ -17,5 +17,5 @@ public class ProductFilterRequest {
     private int page = 0;
     @Min(1)
     @Max(100)
-    private int size = 20;
+    private int size = 9;
 }
