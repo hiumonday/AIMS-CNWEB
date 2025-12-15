@@ -12,6 +12,9 @@ spring:
       email: admin
       password: admin
       roles: ADMIN,PRODUCT_MANAGER
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+    enabled: true
 
 server:
   port: 8080
