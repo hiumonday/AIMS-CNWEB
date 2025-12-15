@@ -3,8 +3,17 @@ spring:
     name: aims-backend
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+  security:
+    user:
+      email: admin
+      password: admin
+      roles: ADMIN,PRODUCT_MANAGER
   liquibase:
-    change-log: classpath:db/changelog/db.changelog-master.yaml
+    change-log: classpath:/db/changelog/db.changelog-master.xml
     enabled: true
 
 server:
