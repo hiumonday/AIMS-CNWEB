@@ -35,4 +35,3 @@ build/
 .application-dev.yml
 .application-prod.yml
 .application-staging.yml
-.application.yml
