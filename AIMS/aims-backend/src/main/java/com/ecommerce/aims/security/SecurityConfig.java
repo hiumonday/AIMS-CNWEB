@@ -62,6 +62,10 @@ public class SecurityConfig {
                 
                 // Payment callbacks (public but should verify signatures in controller)
                 .requestMatchers("/payment/callback/**", "/api/payment/callback/**").permitAll()
+                // Payment initiation (opened for testing; tighten for production)
+                .requestMatchers("/api/payments/**").permitAll()
+                // VietQR testing endpoints (public for testing; lock down in production)
+                .requestMatchers("/api/payments/vietqr/**").permitAll()
                 
                 // Admin-only endpoints
                 .requestMatchers("/api/admin/users/**").hasRole("ADMIN")

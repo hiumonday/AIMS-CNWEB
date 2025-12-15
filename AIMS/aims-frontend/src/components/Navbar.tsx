@@ -15,11 +15,11 @@ const Navbar: FC = () => {
   return (
     <nav className="nav">
       <div className="nav__logo">
-        <Link to="/home">AIMS Store</Link>
+        <Link to="/home">AIMS ATELIER</Link>
       </div>
       <div className="nav__links">
         <Link to="/home">Home</Link>
-        <Link to="/products">Products</Link>
+        <Link to="/products">Shop</Link>
         <Link to="/contact">Contact</Link>
       </div>
       <div className="nav__actions">
