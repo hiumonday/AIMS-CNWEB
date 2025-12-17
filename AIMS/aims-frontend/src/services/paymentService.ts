@@ -1,5 +1,4 @@
 import { apiClient } from "./api";
-import axios from "axios";
 
 /**
  * Payment-related types
@@ -29,36 +28,28 @@ export interface Payment {
 }
 
 export interface VietQRResponse {
-  bin: string;
-  accountNumber: string;
-  accountName: string;
-  amount: number;
-  description: string;
-  orderCode: number;
-  currency: string;
-  paymentLinkId: string;
-  status: string;
-  expiredAt: string | null;
-  checkoutUrl: string;
-  qrCode: string;
+  qrContent?: string;
+  qrImage?: string;
+  transactionId?: string;
+  // legacy fields when using PayOS payment link (kept for compatibility)
+  paymentLinkId?: string;
+  qrCode?: string;
+  amount?: number;
+  orderCode?: number;
+  status?: string;
 }
 
-export interface PayOSPaymentResponse {
-  code: string;
-  desc: string;
-  data: {
-    id: string;
-    orderCode: number;
-    amount: number;
-    amountPaid: number;
-    amountRemaining: number;
-    status: string;
-    createdAt: string;
-    transactions: any[];
-    canceledAt: string | null;
-    cancellationReason: string | null;
-  };
-  signature: string;
+export interface PayOSPaymentStatus {
+  id: string;
+  orderCode: number;
+  amount: number;
+  amountPaid: number;
+  amountRemaining: number;
+  status: string;
+  createdAt: string;
+  transactions: any[];
+  canceledAt?: string | null;
+  cancellationReason?: string | null;
 }
 
 export interface CapturePaymentResponse {
@@ -197,31 +188,17 @@ export async function createVietQRPayment(
 }
 
 /**
- * Check PayOS payment status
- * GET https://api-merchant.payos.vn/v2/payment-requests/{id}
+ * Check PayOS payment status via backend proxy
+ * GET /payments/vietqr/payment-requests/{id}
  *
  * @param paymentLinkId - Payment Link ID or Order Code
  * @returns Payment status details
  */
 export async function checkPayOSPaymentStatus(
   paymentLinkId: string | number
-): Promise<PayOSPaymentResponse> {
-  const clientId = import.meta.env.VITE_PAYOS_CLIENT_ID;
-  const apiKey = import.meta.env.VITE_PAYOS_API_KEY;
-
-  if (!clientId || !apiKey) {
-    console.warn("PayOS credentials missing in .env");
-    // You might want to throw error or handle gracefully
-  }
-
-  const response = await axios.get<PayOSPaymentResponse>(
-    `https://api-merchant.payos.vn/v2/payment-requests/${paymentLinkId}`,
-    {
-      headers: {
-        "x-client-id": clientId,
-        "x-api-key": apiKey,
-      },
-    }
+): Promise<PayOSPaymentStatus> {
+  const response = await apiClient.get<PayOSPaymentStatus>(
+    `/payments/vietqr/payment-requests/${paymentLinkId}`
   );
   return response.data;
 }

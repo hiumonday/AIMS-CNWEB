@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.Data;
@@ -44,11 +43,9 @@ public class CreateOrderRequest {
     @Data
     public static class OrderItemRequest {
         @Schema(example = "1")
-        @NotNull
         private Long productId;
         private String productTitle;
         @Schema(example = "2")
-        @NotNull
         @Min(1)
         private Integer quantity;
         @Schema(example = "120000")

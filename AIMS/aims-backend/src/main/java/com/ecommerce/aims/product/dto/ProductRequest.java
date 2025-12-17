@@ -8,14 +8,12 @@ import com.ecommerce.aims.product.models.ProductStatus;
 import com.ecommerce.aims.product.models.ProductType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
 public class ProductRequest {
-    @NotNull
     private ProductType productType;
     private ProductStatus status;
     @NotBlank
@@ -41,7 +39,6 @@ public class ProductRequest {
     private BigDecimal originalValue;
     @DecimalMin(value = "0.0", inclusive = false)
     private BigDecimal currentPrice;
-    @NotNull
     @PositiveOrZero
     private Integer stock;
 

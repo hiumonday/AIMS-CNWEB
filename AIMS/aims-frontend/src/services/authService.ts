@@ -15,10 +15,18 @@ export interface User {
   roles?: string[];
 }
 
-export interface LoginResponse {
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  accessTokenExpiresAt: string;
+  user: User;
+}
+
+export interface ApiResponse<T> {
   success: boolean;
   message: string;
-  data: User;
+  data: T;
 }
 
 export interface ChangePasswordRequest {
@@ -29,6 +37,25 @@ export interface ChangePasswordRequest {
 export interface ChangePasswordResponse {
   success: boolean;
   message?: string;
+}
+
+/**
+ * Register a new user and receive auth tokens (backend logs in after registration)
+ */
+export async function register(
+  email: string,
+  password: string
+): Promise<ApiResponse<AuthResponse>> {
+  const response = await apiClient.post<ApiResponse<AuthResponse>>(
+    "/auth/register",
+    { email, password }
+  );
+
+  if (response.data.success && response.data.data?.user?.id) {
+    localStorage.setItem("userId", String(response.data.data.user.id));
+  }
+
+  return response.data;
 }
 
 /**
@@ -50,14 +77,14 @@ export interface ChangePasswordResponse {
 export async function login(
   email: string,
   password: string
-): Promise<LoginResponse> {
-  const response = await apiClient.post<LoginResponse>("/auth/login", {
+): Promise<ApiResponse<AuthResponse>> {
+  const response = await apiClient.post<ApiResponse<AuthResponse>>("/auth/login", {
     email,
     password,
   });
 
-  if (response.data.success && response.data.data?.id) {
-    localStorage.setItem("userId", String(response.data.data.id));
+  if (response.data.success && response.data.data?.user?.id) {
+    localStorage.setItem("userId", String(response.data.data.user.id));
   }
 
   return response.data;
@@ -135,6 +162,7 @@ export async function checkAuth(): Promise<boolean> {
 // Export as default object for convenience
 const authService = {
   login,
+  register,
   changePassword,
   logout,
   checkAuth,

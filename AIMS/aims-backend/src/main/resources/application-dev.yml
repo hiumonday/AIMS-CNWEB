@@ -4,10 +4,6 @@ spring:
     username: postgres
     password: matkhau_moi
     driver-class-name: org.postgresql.Driver
-  sql:
-    init:
-      mode: always
-      continue-on-error: true
   jpa:
     hibernate:
       ddl-auto: none

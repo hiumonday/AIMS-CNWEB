@@ -4,10 +4,13 @@ import com.ecommerce.aims.payment.dto.CreatePaymentRequest;
 import com.ecommerce.aims.payment.dto.PaymentResultResponse;
 import com.ecommerce.aims.payment.models.PaymentTransaction;
 import com.ecommerce.aims.payment.models.PaymentStatus;
+import java.math.RoundingMode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.v2.paymentRequests.PaymentLink;
+import vn.payos.model.v2.paymentRequests.PaymentLinkStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -30,15 +33,44 @@ public class VietQRService {
     }
 
     public PaymentResultResponse generateQr(PaymentTransaction transaction, CreatePaymentRequest request) {
-        VietQRClient.VietQrCreateResponse response = vietQRClient.createQr(transaction.getOrderId(),
-                transaction.getAmount(), "AIMS order " + transaction.getOrderId());
-        transaction.setProviderReference(response.getTransactionId());
-        transaction.setQrContent(response.getQrContent() != null ? response.getQrContent() : response.getQrImage());
+        CreatePaymentLinkRequest paymentData = CreatePaymentLinkRequest.builder()
+                .orderCode(transaction.getId())
+                .amount(transaction.getAmount().setScale(0, RoundingMode.HALF_UP).longValue())
+                .description("AIMS order " + transaction.getOrderId())
+                .returnUrl(request.getSuccessReturnUrl())
+                .cancelUrl(request.getCancelReturnUrl())
+                .build();
+
+        CreatePaymentLinkResponse response = vietQRClient.createPaymentLink(paymentData);
+        transaction.setProviderReference(response.getPaymentLinkId());
+        transaction.setQrContent(response.getQrCode());
         return PaymentResultResponse.builder()
                 .transactionId(transaction.getId())
                 .status(PaymentStatus.INIT)
                 .qrContent(transaction.getQrContent())
                 .providerReference(transaction.getProviderReference())
                 .build();
+    }
+
+    public PaymentStatus refreshStatus(PaymentTransaction transaction) {
+        PaymentLink paymentLink = vietQRClient.getPaymentLink(transaction.getId());
+        transaction.setProviderReference(paymentLink.getId());
+        PaymentStatus updatedStatus = mapStatus(paymentLink.getStatus());
+        if (transaction.getStatus() != PaymentStatus.CAPTURED && transaction.getStatus() != PaymentStatus.REFUNDED) {
+            transaction.setStatus(updatedStatus);
+        }
+        return transaction.getStatus();
+    }
+
+    public PaymentLink getPaymentStatus(String id) {
+        return vietQRClient.getPaymentLinkStatus(id);
+    }
+
+    private PaymentStatus mapStatus(PaymentLinkStatus status) {
+        return switch (status) {
+            case PAID -> PaymentStatus.CAPTURED;
+            case CANCELLED, EXPIRED, FAILED, UNDERPAID -> PaymentStatus.FAILED;
+            default -> PaymentStatus.INIT;
+        };
     }
 }

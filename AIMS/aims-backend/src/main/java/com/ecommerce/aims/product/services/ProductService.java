@@ -9,6 +9,7 @@ import com.ecommerce.aims.product.models.ProductStatus;
 import com.ecommerce.aims.product.repository.ProductRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,8 +24,11 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     public PageResponse<ProductResponse> listProducts(ProductFilterRequest filterRequest) {
-        Specification<Product> spec = buildSpecification(filterRequest);
-        Page<Product> page = productRepository.findAll(spec, PageRequest.of(filterRequest.getPage(), filterRequest.getSize()));
+        Objects.requireNonNull(filterRequest, "filterRequest must not be null");
+        Specification<Product> spec = Objects.requireNonNull(buildSpecification(filterRequest), "specification must not be null");
+        int pageNumber = filterRequest.getPage();
+        int pageSize = filterRequest.getSize();
+        Page<Product> page = productRepository.findAll(spec, PageRequest.of(pageNumber, pageSize));
         return PageResponse.<ProductResponse>builder()
             .items(page.map(this::toResponse).getContent())
             .page(page.getNumber())
@@ -35,7 +39,8 @@ public class ProductService {
     }
 
     public ProductResponse getProduct(Long id) {
-        Product product = productRepository.findById(id)
+        Long requiredId = Objects.requireNonNull(id, "id must not be null");
+        Product product = productRepository.findById(requiredId)
             .orElseThrow(() -> new NotFoundException("Product not found"));
         return toResponse(product);
     }

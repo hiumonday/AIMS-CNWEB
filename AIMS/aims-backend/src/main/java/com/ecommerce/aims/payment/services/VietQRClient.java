@@ -2,10 +2,14 @@ package com.ecommerce.aims.payment.services;
 
 import com.ecommerce.aims.common.exception.BusinessException;
 import com.ecommerce.aims.payment.config.VietQrProperties;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Objects;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -13,9 +17,13 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
+import vn.payos.model.v2.paymentRequests.PaymentLink;
 
 @Service
+@lombok.extern.slf4j.Slf4j
 public class VietQRClient {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final WebClient.Builder webClientBuilder;
     private final VietQrProperties properties;
@@ -39,29 +47,97 @@ public class VietQRClient {
         }
     }
 
+    public PaymentLink getPaymentLinkStatus(String paymentLinkIdOrOrderCode) {
+        Objects.requireNonNull(paymentLinkIdOrOrderCode, "paymentLinkIdOrOrderCode must not be null");
+        try {
+            if (paymentLinkIdOrOrderCode.chars().allMatch(Character::isDigit)) {
+                return payOS.paymentRequests().get(Long.valueOf(paymentLinkIdOrOrderCode));
+            }
+            return payOS.paymentRequests().get(paymentLinkIdOrOrderCode);
+        } catch (Exception e) {
+            throw new BusinessException("PayOS get payment link error: " + e.getMessage());
+        }
+    }
+
+    public PaymentLink getPaymentLink(Long orderCode) {
+        try {
+            return payOS.paymentRequests().get(orderCode);
+        } catch (Exception e) {
+            throw new BusinessException("PayOS get payment link error: " + e.getMessage());
+        }
+    }
+
     public VietQrCreateResponse createQr(Long orderId, BigDecimal amount, String description) {
         try {
             VietQrCreateRequest payload = new VietQrCreateRequest();
             payload.setOrderId(orderId);
             payload.setAmount(amount.setScale(0, RoundingMode.HALF_UP));
             payload.setDescription(description);
-            return client()
+            log.info("Calling VietQR generate at {}", buildGenerateUrl());
+
+            String raw = webClientBuilder.build()
                     .post()
-                    .uri("/v2/generate")
-                    .header("x-client-id", properties.getClientId())
-                    .header("x-api-key", properties.getApiKey())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(payload)
+                    .uri(buildGenerateUrl())
+                    .header("x-client-id", Objects.requireNonNull(properties.getClientId(), "clientId must not be null"))
+                    .header("x-api-key", Objects.requireNonNull(properties.getApiKey(), "apiKey must not be null"))
+                    .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON, "mediaType must not be null"))
+                    .bodyValue(Objects.requireNonNull(payload, "payload must not be null"))
                     .retrieve()
-                    .bodyToMono(VietQrCreateResponse.class)
+                    .onStatus(HttpStatusCode::isError, resp -> resp.bodyToMono(String.class)
+                        .defaultIfEmpty("no-body")
+                        .map(body -> (Throwable) new BusinessException("VietQR create error: http " + resp.statusCode() + " - " + body)))
+                    .bodyToMono(String.class)
                     .block();
+
+            if (raw == null) {
+                throw new BusinessException("VietQR create error: empty response");
+            }
+
+            JsonNode root = OBJECT_MAPPER.readTree(raw);
+            String code = root.hasNonNull("code") ? root.get("code").asText() : null;
+            if (code != null && !"00".equals(code) && !"0".equals(code)) {
+                String desc = root.hasNonNull("desc") ? root.get("desc").asText() : "unknown";
+                throw new BusinessException("VietQR create error: " + desc + " (code " + code + ")");
+            }
+
+            JsonNode data = root.has("data") ? root.get("data") : root;
+            VietQrCreateResponse response = new VietQrCreateResponse();
+            response.setQrContent(firstNonNullText(data, "qrContent", "qrData", "qrDataURL", "qrUrl"));
+            response.setQrImage(firstNonNullText(data, "qrImage", "qrCode"));
+            response.setTransactionId(firstNonNullText(data, "transactionId", "orderCode", "orderId"));
+            return response;
         } catch (WebClientResponseException ex) {
             throw new BusinessException("VietQR create error: " + ex.getResponseBodyAsString());
+        } catch (Exception ex) {
+            throw new BusinessException("VietQR create error: " + ex.getMessage());
         }
     }
 
-    private WebClient client() {
-        return webClientBuilder.baseUrl(properties.getBaseUrl()).build();
+    private String buildGenerateUrl() {
+        String base = Objects.requireNonNull(properties.getBaseUrl(), "baseUrl must not be null");
+        if (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        if (base.endsWith("/v2/generate")) {
+            return base;
+        }
+        return base + "/v2/generate";
+    }
+
+    private String firstNonNullText(JsonNode node, String... fields) {
+        if (node == null) {
+            return null;
+        }
+        for (String f : fields) {
+            JsonNode child = node.get(f);
+            if (child != null && !child.isNull()) {
+                String val = child.asText();
+                if (val != null && !val.isEmpty()) {
+                    return val;
+                }
+            }
+        }
+        return null;
     }
 
     @Data

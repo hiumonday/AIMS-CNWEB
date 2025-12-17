@@ -11,9 +11,9 @@ import com.ecommerce.aims.product.models.ProductStatus;
 import com.ecommerce.aims.product.models.ProductType;
 import com.ecommerce.aims.product.repository.ProductHistoryRepository;
 import com.ecommerce.aims.product.repository.ProductRepository;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,29 +27,33 @@ public class ProductAdminService {
 
     @Transactional
     public ProductResponse create(ProductRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
         validateRequest(request);
         Product product = new Product();
         applyRequest(product, request);
         product.setStatus(request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE);
-        Product saved = productRepository.save(product);
-        historyRepository.save(ProductHistory.builder().product(saved).action("CREATE").note("Created product").build());
+        Product saved = Objects.requireNonNull(productRepository.save(product));
+        Objects.requireNonNull(historyRepository.save(ProductHistory.builder().product(saved).action("CREATE").note("Created product").build()));
         return toResponse(saved);
     }
 
     @Transactional
     public ProductResponse update(Long id, ProductRequest request) {
+        Long requiredId = Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(request, "request must not be null");
         validateRequest(request);
-        Product product = productRepository.findById(id)
+        Product product = productRepository.findById(requiredId)
             .orElseThrow(() -> new NotFoundException("Product not found"));
         applyRequest(product, request);
-        Product saved = productRepository.save(product);
-        historyRepository.save(ProductHistory.builder().product(saved).action("UPDATE").note("Updated product").build());
+        Product saved = Objects.requireNonNull(productRepository.save(product));
+        Objects.requireNonNull(historyRepository.save(ProductHistory.builder().product(saved).action("UPDATE").note("Updated product").build()));
         return toResponse(saved);
     }
 
     @Transactional
     public void deleteOrDeactivate(Long id) {
-        Product product = productRepository.findById(id)
+        Long requiredId = Objects.requireNonNull(id, "id must not be null");
+        Product product = productRepository.findById(requiredId)
             .orElseThrow(() -> new NotFoundException("Product not found"));
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.atStartOfDay();
@@ -62,14 +66,16 @@ public class ProductAdminService {
         if (stock != null && stock > 0) {
             product.setStatus(ProductStatus.DEACTIVATED);
             productRepository.save(product);
-            historyRepository.save(ProductHistory.builder().product(product).action("DEACTIVATE").note("Stock remaining, deactivated").build());
+            Objects.requireNonNull(historyRepository.save(ProductHistory.builder().product(product).action("DEACTIVATE").note("Stock remaining, deactivated").build()));
             return;
         }
-        historyRepository.save(ProductHistory.builder().product(null).action("DELETE").note("Deleted product " + product.getId()).build());
+        Objects.requireNonNull(historyRepository.save(ProductHistory.builder().product(null).action("DELETE").note("Deleted product " + product.getId()).build()));
         productRepository.delete(product);
     }
 
     private void applyRequest(Product product, ProductRequest request) {
+        Objects.requireNonNull(product, "product must not be null");
+        Objects.requireNonNull(request, "request must not be null");
         if (request.getOriginalValue() != null && request.getCurrentPrice() != null) {
             if (!MoneyUtils.isWithinPriceRule(request.getOriginalValue(), request.getCurrentPrice())) {
                 throw new BusinessException("Current price must be between 30% and 150% of original value");
@@ -97,6 +103,7 @@ public class ProductAdminService {
     }
 
     private void validateRequest(ProductRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
         if (request.getOriginalValue() != null && request.getOriginalValue().signum() <= 0) {
             throw new BusinessException("Original value must be positive");
         }
@@ -122,27 +129,28 @@ public class ProductAdminService {
     }
 
     private ProductResponse toResponse(Product product) {
+        Product requiredProduct = Objects.requireNonNull(product, "product must not be null");
         return ProductResponse.builder()
-            .id(product.getId())
-            .productType(product.getProductType())
-            .status(product.getStatus())
-            .barcode(product.getBarcode())
-            .title(product.getTitle())
-            .category(product.getCategory())
-            .conditionLabel(product.getConditionLabel())
-            .dominantColor(product.getDominantColor())
-            .returnPolicy(product.getReturnPolicy())
-            .height(product.getHeight())
-            .width(product.getWidth())
-            .length(product.getLength())
-            .weight(product.getWeight())
-            .originalValue(product.getOriginalValue())
-            .currentPrice(product.getCurrentPrice())
-            .stock(product.getStock())
-            .bookDetail(product.getBookDetail())
-            .newspaperDetail(product.getNewspaperDetail())
-            .cdDetail(product.getCdDetail())
-            .dvdDetail(product.getDvdDetail())
+            .id(requiredProduct.getId())
+            .productType(requiredProduct.getProductType())
+            .status(requiredProduct.getStatus())
+            .barcode(requiredProduct.getBarcode())
+            .title(requiredProduct.getTitle())
+            .category(requiredProduct.getCategory())
+            .conditionLabel(requiredProduct.getConditionLabel())
+            .dominantColor(requiredProduct.getDominantColor())
+            .returnPolicy(requiredProduct.getReturnPolicy())
+            .height(requiredProduct.getHeight())
+            .width(requiredProduct.getWidth())
+            .length(requiredProduct.getLength())
+            .weight(requiredProduct.getWeight())
+            .originalValue(requiredProduct.getOriginalValue())
+            .currentPrice(requiredProduct.getCurrentPrice())
+            .stock(requiredProduct.getStock())
+            .bookDetail(requiredProduct.getBookDetail())
+            .newspaperDetail(requiredProduct.getNewspaperDetail())
+            .cdDetail(requiredProduct.getCdDetail())
+            .dvdDetail(requiredProduct.getDvdDetail())
             .build();
     }
 }

@@ -1,8 +1,8 @@
 package com.ecommerce.aims.user.models;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -22,9 +22,22 @@ public class UserPrincipal implements UserDetails {
         this.username = user.getEmail();
         this.password = user.getPassword();
         this.status = user.getStatus();
-        this.authorities = user.getRoles().stream()
-            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
-            .collect(Collectors.toSet());
+        
+        // Collect both role-based and permission-based authorities
+        Set<SimpleGrantedAuthority> auths = new HashSet<>();
+        
+        // Add role authorities (ROLE_ADMIN, ROLE_PRODUCT_MANAGER, etc.)
+        user.getRoles().stream()
+            .map(role -> new SimpleGrantedAuthority(role.getName().name()))
+            .forEach(auths::add);
+        
+        // Add permission authorities (PERM_USER:READ, PERM_PRODUCT:WRITE, etc.)
+        user.getRoles().stream()
+            .flatMap(role -> role.getPermissions().stream())
+            .map(permission -> new SimpleGrantedAuthority(permission.toAuthority()))
+            .forEach(auths::add);
+        
+        this.authorities = auths;
     }
 
     @Override

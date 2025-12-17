@@ -51,6 +51,7 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    private LocalDateTime lastPasswordChangeAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

@@ -15,11 +15,11 @@ const Navbar: FC = () => {
   return (
     <nav className="nav">
       <div className="nav__logo">
-        <Link to="/home">AIMS Store</Link>
+        <Link to="/home">AIMS ATELIER</Link>
       </div>
       <div className="nav__links">
         <Link to="/home">Home</Link>
-        <Link to="/products">Products</Link>
+        <Link to="/products">Shop</Link>
         <Link to="/contact">Contact</Link>
       </div>
       <div className="nav__actions">
@@ -28,9 +28,14 @@ const Navbar: FC = () => {
             Log out
           </button>
         ) : (
-          <Link className="btn light" to="/login">
-            Log in
-          </Link>
+          <>
+            <Link className="btn light" to="/login">
+              Log in
+            </Link>
+            <Link className="btn primary" to="/register" style={{ marginLeft: '8px' }}>
+              Register
+            </Link>
+          </>
         )}
         <Link className="nav__cart" to="/cart">
           <svg

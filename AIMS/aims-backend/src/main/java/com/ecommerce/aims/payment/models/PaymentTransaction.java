@@ -1,7 +1,5 @@
 package com.ecommerce.aims.payment.models;
 
-import com.ecommerce.aims.payment.models.PaymentProvider;
-import com.ecommerce.aims.payment.models.PaymentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

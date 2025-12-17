@@ -1,6 +1,9 @@
 import axios, { AxiosError } from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined;
+// Prefer .env config; fallback to backend dev port 8000 with /api prefix
+const API_BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  "http://localhost:8000/api";
 
 // Create axios instance with base configuration
 const apiClient = axios.create({
