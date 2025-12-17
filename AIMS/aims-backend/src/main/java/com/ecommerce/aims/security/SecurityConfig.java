@@ -45,6 +45,15 @@ public class SecurityConfig {
             .sessionManagement(session -> 
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
+            // TODO: OCP violation - authorization rules are hardcoded in code (paths + roles + HTTP methods).
+            // Why this is risky:
+            // - Adding new roles or API groups forces edits to this class (modification instead of extension).
+            // - Risk of regressions: changing a matcher can accidentally open/close access to unrelated endpoints.
+            // - Environment differences (dev/staging/prod) are harder to manage when rules are not configuration-driven.
+            // Recommended refactor options:
+            // - Externalize rule mappings into application.yml (or DB) and build matchers dynamically at startup.
+            // - Group endpoints by feature modules and keep matchers co-located (or use @PreAuthorize on controllers).
+            // - Consider defining constants/enums for roles and route groups to reduce typo/hardcode risk.
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()

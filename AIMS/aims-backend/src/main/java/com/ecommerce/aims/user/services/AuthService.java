@@ -41,9 +41,24 @@ public class AuthService {
         log.info("Login attempt email={}", request.getEmail());
         
         try {
+            // TODO: OCP violation - login flow is hardcoded to username/password authentication.
+            // Why this is risky:
+            // - Adding new auth methods (OAuth2/OIDC, OTP, LDAP, SSO, card-based auth, etc.) requires modifying this method
+            //   instead of extending behavior via composition.
+            // - The service becomes a “god method” that grows branches (if/else) for each auth type.
+            // Recommended refactor:
+            // - Introduce an AuthStrategy interface (or use Spring Security AuthenticationProvider chain).
+            // - Let login() select an appropriate strategy based on request type, then return a common AuthResult.
             Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
             
+            // TODO: DIP violation - service depends on concrete principal type (UserPrincipal) via casting.
+            // Why this is risky:
+            // - Different AuthenticationProviders may return a different principal type (e.g., OidcUser for Google login).
+            // - This increases coupling between AuthService and the current security implementation.
+            // Recommended refactor:
+            // - Depend on the abstraction (UserDetails) or introduce a small adapter utility (e.g., SecurityUtils)
+            //   that extracts userId/username from Authentication in a provider-agnostic way.
             UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
             User user = userRepository.findById(principal.getId())
                 .orElseThrow(() -> new NotFoundException("User not found"));

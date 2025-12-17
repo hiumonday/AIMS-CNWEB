@@ -69,6 +69,15 @@ public class AuthController {
         return ApiResponse.success(null, "Logged out successfully");
     }
     
+    // TODO: SRP violation - Controller is handling detailed cookie configuration (security attributes + expiry policy).
+    // Why this is risky:
+    // - Security-sensitive settings (HttpOnly/Secure/SameSite/Path/MaxAge) are duplicated across endpoints.
+    // - Any future change to token transport (e.g., Authorization header, different cookie names, multi-domain support)
+    //   requires touching controller code, increasing regression risk.
+    // - Mixing HTTP concerns with auth flows makes endpoints harder to test and maintain.
+    // Recommended refactor:
+    // - Extract cookie creation/clearing into a dedicated component (e.g., TokenCookieService / CookieUtil).
+    // - Centralize defaults (SameSite policy, secure flag by profile, domain/path) and reuse from login/refresh/logout.
     private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
         Cookie cookie = new Cookie("refreshToken", refreshToken);
         cookie.setHttpOnly(true); // Prevents JavaScript access
