@@ -13,12 +13,14 @@ import com.ecommerce.aims.product.models.Product;
 import com.ecommerce.aims.product.models.ProductStatus;
 import com.ecommerce.aims.product.repository.ProductRepository;
 import java.math.BigDecimal;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.lang.Nullable;
 
 @Service
 @RequiredArgsConstructor
@@ -34,24 +36,27 @@ public class CartService {
 
     @Transactional
     public CartResponse addToCart(String sessionKey, AddToCartRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
+        Long productId = Objects.requireNonNull(request.getProductId(), "productId must not be null");
+        Integer quantity = Objects.requireNonNull(request.getQuantity(), "quantity must not be null");
         Cart cart = resolveCart(sessionKey);
-        Product product = productRepository.findById(request.getProductId())
+        Product product = productRepository.findById(productId)
             .orElseThrow(() -> new NotFoundException("Product not found"));
         if (product.getStatus() == ProductStatus.DEACTIVATED) {
             throw new BusinessException("Product is not available");
         }
-        ensureStockAvailable(product, request.getQuantity());
+        ensureStockAvailable(product, quantity);
         Optional<CartItem> existing = cart.getItems().stream()
-            .filter(item -> item.getProductId().equals(request.getProductId()))
+            .filter(item -> item.getProductId().equals(productId))
             .findFirst();
         CartItem item = existing.orElseGet(() -> {
             CartItem created = new CartItem();
             created.setCart(cart);
-            created.setProductId(request.getProductId());
+            created.setProductId(productId);
             cart.getItems().add(created);
             return created;
         });
-        item.setQuantity(request.getQuantity());
+        item.setQuantity(quantity);
         BigDecimal price = Optional.ofNullable(product.getCurrentPrice()).orElse(request.getPrice());
         if (price == null) {
             throw new BusinessException("Price must be provided when product has no current price");
@@ -64,11 +69,13 @@ public class CartService {
 
     @Transactional
     public CartResponse updateItem(String sessionKey, UpdateCartItemRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
+        Long productId = Objects.requireNonNull(request.getProductId(), "productId must not be null");
         Cart cart = resolveCart(sessionKey);
-        Product product = productRepository.findById(request.getProductId())
+        Product product = productRepository.findById(productId)
             .orElseThrow(() -> new NotFoundException("Product not found"));
         cart.getItems().stream()
-            .filter(item -> item.getProductId().equals(request.getProductId()))
+            .filter(item -> item.getProductId().equals(productId))
             .findFirst()
             .ifPresent(item -> {
                 if (request.getQuantity() != null) {
@@ -89,8 +96,9 @@ public class CartService {
 
     @Transactional
     public CartResponse removeItem(String sessionKey, Long productId) {
+        Long id = Objects.requireNonNull(productId, "productId must not be null");
         Cart cart = resolveCart(sessionKey);
-        cart.getItems().removeIf(item -> item.getProductId().equals(productId));
+        cart.getItems().removeIf(item -> item.getProductId().equals(id));
         cartRepository.save(cart);
         return toResponse(cart);
     }
@@ -103,21 +111,22 @@ public class CartService {
         }
     }
 
-    private Cart resolveCart(String sessionKey) {
+    private Cart resolveCart(@Nullable String sessionKey) {
         String key = sessionKey != null ? sessionKey : UUID.randomUUID().toString();
         return cartRepository.findBySessionKey(key)
             .orElseGet(() -> cartRepository.save(Cart.builder().sessionKey(key).build()));
     }
 
     private CartResponse toResponse(Cart cart) {
-        BigDecimal total = cart.getItems().stream()
+        Cart nonNullCart = Objects.requireNonNull(cart, "cart must not be null");
+        BigDecimal total = nonNullCart.getItems().stream()
             .map(item -> Optional.ofNullable(item.getTotalPrice()).orElse(BigDecimal.ZERO))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalWithVat = MoneyUtils.applyVat(total);
         return CartResponse.builder()
-            .cartId(cart.getId())
-            .sessionKey(cart.getSessionKey())
-            .items(cart.getItems().stream()
+            .cartId(nonNullCart.getId())
+            .sessionKey(nonNullCart.getSessionKey())
+            .items(nonNullCart.getItems().stream()
                 .map(item -> CartResponse.CartLine.builder()
                     .productId(item.getProductId())
                     .quantity(item.getQuantity())

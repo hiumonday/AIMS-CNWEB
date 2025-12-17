@@ -3,7 +3,7 @@ import './Layout.css';
 
 const Footer: FC = () => (
   <footer className="footer">
-    <div>(c) 2025 Bookverse</div>
+    <div>© 2025 AIMS Atelier</div>
     <div className="footer__links">
       <a href="/terms">Terms</a>
       <a href="/privacy">Privacy</a>

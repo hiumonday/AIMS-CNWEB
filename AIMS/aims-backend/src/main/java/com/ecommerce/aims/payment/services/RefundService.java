@@ -10,6 +10,7 @@ import com.ecommerce.aims.payment.models.PaymentProvider;
 import com.ecommerce.aims.payment.models.PaymentStatus;
 import com.ecommerce.aims.payment.repository.PaymentTransactionRepository;
 import com.ecommerce.aims.payment.models.PaymentTransaction;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,9 @@ public class RefundService {
 
     @Transactional
     public PaymentResultResponse refund(RefundRequest request) {
-        PaymentTransaction transaction = paymentTransactionRepository.findById(request.getTransactionId())
+        Objects.requireNonNull(request, "request must not be null");
+        Long transactionId = Objects.requireNonNull(request.getTransactionId(), "transactionId must not be null");
+        PaymentTransaction transaction = paymentTransactionRepository.findById(transactionId)
             .orElseThrow(() -> new NotFoundException("Transaction not found"));
         java.math.BigDecimal refundAmount = request.getAmount() != null ? request.getAmount() : transaction.getAmount();
         if (transaction.getProvider() == PaymentProvider.PAYPAL) {

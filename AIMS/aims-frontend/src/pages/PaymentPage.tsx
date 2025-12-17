@@ -57,12 +57,24 @@ const PaymentPage = () => {
 
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [paymentLinkId, setPaymentLinkId] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const [qrImageError, setQrImageError] = useState(false);
+  const statusText =
+    paymentStatus === "PAID"
+      ? "Đã thanh toán"
+      : paymentStatus
+      ? paymentStatus
+      : "Đang chờ";
 
   // Fetch VietQR code when method is selected
   useEffect(() => {
     if (method === "vietqr" && orderId && !qrCodeUrl) {
       const fetchQr = async () => {
         setIsProcessing(true);
+        setShowSuccess(false);
+        setShowFail(false);
+        setPaymentStatus(null);
+        setQrImageError(false);
         try {
           // Use the new VietQR endpoint
           const payment = await paymentService.createVietQRPayment({
@@ -74,8 +86,16 @@ const PaymentPage = () => {
             cancelReturnUrl: `${window.location.origin}/payment/cancel`,
           });
 
-          if (payment.qrCode) {
-            setQrCodeUrl(payment.qrCode);
+          const qrString = payment.qrContent || payment.qrCode;
+          const qrImg = payment.qrImage;
+          if (qrString) {
+            setQrCodeUrl(qrString);
+          } else if (qrImg) {
+            const cleaned = qrImg
+              .replace(/^data:image\/[a-zA-Z]+;base64,/, "")
+              .replace(/\s/g, "");
+            const prefixed = `data:image/png;base64,${cleaned}`;
+            setQrCodeUrl(prefixed);
           }
           if (payment.paymentLinkId) {
             setPaymentLinkId(payment.paymentLinkId);
@@ -90,59 +110,89 @@ const PaymentPage = () => {
     }
   }, [method, orderId, calculatedTotal, qrCodeUrl]);
 
+  // Auto-poll PayOS so users don't have to click "Tôi đã thanh toán"
+  useEffect(() => {
+    if (method !== "vietqr" || !paymentLinkId) {
+      return;
+    }
+
+    let cancelled = false;
+    let intervalId: number | null = null;
+
+    const pollStatus = async () => {
+      try {
+        const statusResponse = await paymentService.checkPayOSPaymentStatus(paymentLinkId);
+        if (cancelled) return;
+        const status = statusResponse.status;
+        setPaymentStatus(status);
+        if (status === "PAID") {
+          if (intervalId) {
+            clearInterval(intervalId);
+          }
+          setShowSuccess(true);
+          setShowFail(false);
+          setTimeout(() => {
+            clear();
+            navigate("/");
+          }, 1200);
+        } else if (["CANCELLED", "FAILED", "EXPIRED"].includes(status)) {
+          if (intervalId) {
+            clearInterval(intervalId);
+          }
+          setShowFail(true);
+          setShowSuccess(false);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to poll PayOS status", error);
+        }
+      }
+    };
+
+    intervalId = window.setInterval(pollStatus, 3000);
+    pollStatus();
+
+    return () => {
+      cancelled = true;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [method, paymentLinkId, clear, navigate]);
+
   const handlePay = async (simulateSuccess: boolean) => {
     if (!orderId) {
       alert("No order found. Please start from delivery page.");
+      return;
+    }
+    if (method !== "paypal") {
+      return;
+    }
+
+    if (!simulateSuccess) {
+      setShowFail(true);
+      setShowSuccess(false);
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      if (method === "paypal") {
-        // Create PayPal payment
-        const payment = await paymentService.createPayment({
-          orderId,
-          provider: "PAYPAL",
-          amount: calculatedTotal,
-          currency: "USD",
-          successReturnUrl: `${window.location.origin}/payment/success?orderId=${orderId}`,
-          cancelReturnUrl: `${window.location.origin}/payment/cancel`,
-        });
+      // Create PayPal payment
+      const payment = await paymentService.createPayment({
+        orderId,
+        provider: "PAYPAL",
+        amount: calculatedTotal,
+        currency: "USD",
+        successReturnUrl: `${window.location.origin}/payment/success?orderId=${orderId}`,
+        cancelReturnUrl: `${window.location.origin}/payment/cancel`,
+      });
 
-        // Redirect to PayPal for approval
-        if (payment.approvalUrl) {
-          window.location.href = payment.approvalUrl;
-        } else {
-          throw new Error("No approval URL received from payment provider");
-        }
+      // Redirect to PayPal for approval
+      if (payment.approvalUrl) {
+        window.location.href = payment.approvalUrl;
       } else {
-        // VietQR - Check status
-        if (simulateSuccess) {
-          // "Tôi đã thanh toán" button clicked
-          if (!paymentLinkId) {
-            alert("Không tìm thấy mã thanh toán. Vui lòng thử lại.");
-            return;
-          }
-
-          const statusResponse = await paymentService.checkPayOSPaymentStatus(paymentLinkId);
-          
-          if (statusResponse.data.status === "PAID") {
-            setShowSuccess(true);
-            setShowFail(false);
-            // Clear cart and navigate to home as requested
-            setTimeout(() => {
-              clear();
-              navigate("/");
-            }, 1200);
-          } else {
-            // Still PENDING or other status
-            alert("Chắc chưa được bạn chờ tí rồi thử lại");
-          }
-        } else {
-          setShowFail(true);
-          setShowSuccess(false);
-        }
+        throw new Error("No approval URL received from payment provider");
       }
     } catch (error) {
       console.error("Payment failed:", error);
@@ -177,45 +227,68 @@ const PaymentPage = () => {
       <h1 style={{ margin: "0 0 18px" }}>Payment</h1>
       <div className="checkout-layout">
         <section className="panel">
-          <div className="input-group" style={{ marginBottom: 10 }}>
-            <label>Chọn phương thức thanh toán</label>
-            <div className="payment-tabs">
-              <button
-                type="button"
-                className={`payment-tab ${method === "vietqr" ? "active" : ""}`}
-                onClick={() => setMethod("vietqr")}
-              >
-                <span role="img" aria-label="qr">
-                  📱
-                </span>
-                VietQR
-              </button>
-              <button
-                type="button"
-                className={`payment-tab ${method === "paypal" ? "active" : ""}`}
-                onClick={() => setMethod("paypal")}
-              >
-                <span role="img" aria-label="card">
-                  💳
-                </span>
-                PayPal
-              </button>
+          <div className="payment-hero">
+            <div>
+              <div className="eyebrow">Thanh toán an toàn</div>
+              <div className="payment-title">Chọn phương thức thanh toán</div>
             </div>
+            <span className="status-pill">
+              <span className="dot" />
+              {statusText}
+            </span>
+          </div>
+
+          <div className="payment-tabs">
+            <button
+              type="button"
+              className={`payment-tab ${method === "vietqr" ? "active" : ""}`}
+              onClick={() => setMethod("vietqr")}
+            >
+              <span role="img" aria-label="qr">
+                📱
+              </span>
+              VietQR
+            </button>
+            <button
+              type="button"
+              className={`payment-tab ${method === "paypal" ? "active" : ""}`}
+              onClick={() => setMethod("paypal")}
+            >
+              <span role="img" aria-label="card">
+                💳
+              </span>
+              PayPal
+            </button>
           </div>
 
           <div className="payment-body">
             {method === "vietqr" ? (
               <>
-                <div className="qr-box">
-                  {qrCodeUrl ? (
-                    <div style={{ background: "white", padding: "10px", borderRadius: "8px" }}>
-                      <QRCodeCanvas value={qrCodeUrl} size={250} />
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: 64, color: "#4f46e5" }}>
-                      {isProcessing ? "..." : "▢▢"}
-                    </div>
-                  )}
+                <div className="qr-frame">
+                  <div className="qr-box">
+                    {qrCodeUrl ? (
+                      <div className="qr-inner">
+                        {qrCodeUrl.startsWith("data:image") && !qrImageError ? (
+                          <img
+                            src={qrCodeUrl}
+                            alt="VietQR"
+                            onError={() => setQrImageError(true)}
+                            style={{ width: 240, height: 240, objectFit: "contain" }}
+                          />
+                        ) : (
+                          <QRCodeCanvas value={qrCodeUrl} size={240} />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="qr-placeholder">
+                        {isProcessing ? "Đang tạo mã..." : "▢▢"}
+                      </div>
+                    )}
+                  </div>
+                  <div className="qr-meta">
+                    <span>Mã đơn hàng</span>
+                    <strong>#{orderId ?? "--"}</strong>
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontWeight: 700 }}>Quét mã để thanh toán</div>
@@ -224,14 +297,14 @@ const PaymentPage = () => {
                   </p>
                 </div>
                 <div className="price">${calculatedTotal.toFixed(2)}</div>
-                <button
-                  className="btn primary"
-                  type="button"
-                  onClick={() => handlePay(true)}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? "Processing..." : "Tôi đã thanh toán"}
-                </button>
+                <p className="note-text">
+                  {paymentStatus === "PAID"
+                    ? "Đã xác nhận thanh toán, đang chuyển hướng..."
+                    : "Hệ thống tự kiểm tra trạng thái thanh toán mỗi 3 giây."}
+                  {paymentStatus && paymentStatus !== "PAID"
+                    ? ` (Trạng thái: ${paymentStatus})`
+                    : ""}
+                </p>
                 <button
                   className="btn light"
                   type="button"

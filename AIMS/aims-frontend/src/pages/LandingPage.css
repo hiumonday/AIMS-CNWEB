@@ -3,41 +3,45 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 24px;
-  background: linear-gradient(135deg, #eef2ff, #f7f9ff);
+  padding: 64px 24px;
+  background: linear-gradient(160deg, #f6f4f1 0%, #fefefe 60%, #f6f4f1 100%);
 }
 
 .landing__card {
-  width: min(680px, 100%);
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(229, 231, 235, 0.7);
-  border-radius: 16px;
-  padding: 48px 32px;
+  width: min(760px, 100%);
+  background: #ffffff;
+  border: 1px solid #e7e2da;
+  border-radius: 18px;
+  padding: 72px 60px;
   text-align: center;
-  box-shadow: 0 18px 70px rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(6px);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.08);
 }
 
-.landing__icon {
-  width: 76px;
-  height: 76px;
-  margin: 0 auto 16px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #4f46e5, #818cf8);
-  display: grid;
-  place-items: center;
-  box-shadow: 0 14px 30px rgba(79, 70, 229, 0.28);
+.landing__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 12px;
+  color: #8a877f;
+  margin-bottom: 10px;
 }
 
 .landing__card h1 {
-  margin: 0 0 8px;
-  font-size: 34px;
+  margin: 0 0 14px;
+  font-size: 44px;
   font-weight: 700;
-  color: #0f172a;
+  letter-spacing: 0.08em;
 }
 
 .landing__card p {
-  margin: 0 0 22px;
-  color: #475569;
+  margin: 0 0 28px;
+  color: #4a4a4a;
   font-size: 16px;
+  line-height: 1.6;
+}
+
+.landing__actions {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
 }

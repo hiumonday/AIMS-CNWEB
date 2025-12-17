@@ -19,6 +19,13 @@ spring:
 server:
   port: 8080
 
+security:
+  jwt:
+    secret-key: ${JWT_SECRET_KEY:aims-backend-super-secret-key-change-this-in-production-min-256-bits-required-for-hs256}
+    access-token-expiration: 900000 # 15 minutes
+    refresh-token-expiration: 604800000 # 7 days
+    issuer: aims-backend
+
 springdoc:
   api-docs:
     path: /api/docs
@@ -31,7 +38,7 @@ paypal:
   client-secret: EHpV3RObVFJW5rQ6V0mpFbhV23j-SLolQdkTyS791sGaGc1c00PfWv1-clr1UxqceHzoeuzptfmzbUwz
 
 vietqr:
-  base-url: ${VIETQR_BASE_URL:https://sandbox.vietqr.io}
-  api-key: ${VIETQR_API_KEY:4fb1795a-2db8-498a-bf0c-3ff01b032c44}
-  client-id: ${VIETQR_CLIENT_ID:6dbe87b7-9931-45f1-a8ae-65ea78d29aca}
-  checksum-key: ${VIETQR_CHECKSUM_KEY:d60df409c5edd74ce3f155208dbc86016ea96cf65fe8b77d00186eb624c24e1e}
+  base-url: ${VIETQR_BASE_URL:https://api.vietqr.io}
+  api-key: ${VIETQR_API_KEY:707e768d-b797-4a41-9f5c-6912bff7495b}
+  client-id: ${VIETQR_CLIENT_ID:e2ded8cd-64b7-4b08-ae1d-0f9f810d5513}
+  checksum-key: ${VIETQR_CHECKSUM_KEY:38deb0b3892fdcd7b578552d8e375fdeda902fc6528e38478daf534a3ee90702}

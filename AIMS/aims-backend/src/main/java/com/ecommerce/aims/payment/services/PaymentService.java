@@ -11,6 +11,7 @@ import com.ecommerce.aims.payment.models.PaymentProvider;
 import com.ecommerce.aims.payment.models.PaymentStatus;
 import com.ecommerce.aims.payment.models.PaymentTransaction;
 import com.ecommerce.aims.payment.repository.PaymentTransactionRepository;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,19 +28,21 @@ public class PaymentService {
 
     @Transactional
     public PaymentResultResponse createPayment(CreatePaymentRequest request) {
-        Order order = orderRepository.findById(request.getOrderId())
+        Objects.requireNonNull(request, "request must not be null");
+        Long orderId = Objects.requireNonNull(request.getOrderId(), "orderId must not be null");
+        Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new NotFoundException("Order not found"));
         if (request.getAmount() == null) {
             request.setAmount(order.getTotalWithVat());
         }
-        PaymentTransaction transaction = PaymentTransaction.builder()
-            .orderId(request.getOrderId())
+        PaymentTransaction transaction = Objects.requireNonNull(PaymentTransaction.builder()
+            .orderId(orderId)
             .provider(request.getProvider())
             .status(PaymentStatus.INIT)
             .amount(request.getAmount())
             .currency(request.getCurrency())
             .providerReference(UUID.randomUUID().toString())
-            .build();
+            .build());
         PaymentTransaction saved = paymentTransactionRepository.save(transaction);
         PaymentResultResponse response;
         if (request.getProvider() == PaymentProvider.PAYPAL) {
@@ -59,7 +62,8 @@ public class PaymentService {
 
     @Transactional
     public PaymentResultResponse markCaptured(Long transactionId, String providerReference) {
-        PaymentTransaction transaction = paymentTransactionRepository.findById(transactionId)
+        Long id = Objects.requireNonNull(transactionId, "transactionId must not be null");
+        PaymentTransaction transaction = paymentTransactionRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Transaction not found"));
         if (providerReference != null) {
             transaction.setProviderReference(providerReference);

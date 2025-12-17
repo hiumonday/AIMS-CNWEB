@@ -1,7 +1,6 @@
 package com.ecommerce.aims.payment.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 
 @ConfigurationProperties(prefix = "vietqr")
 public class VietQrProperties {
