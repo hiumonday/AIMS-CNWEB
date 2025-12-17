@@ -23,6 +23,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+// TODO: ISP violation - this service mixes multiple “client” use-cases:
+// - Admin use-cases: listUsers(), lockUser(), unlockUser()
+// - End-user profile use-cases: updateUser(), getUser()
+// - Auth/registration use-cases: createUser()
+// Why this is risky:
+// - Any controller that injects UserService can access admin-only operations by accident.
+// - Changes for one client type (e.g., admin auditing, extra validations) can unintentionally impact other flows.
+// Recommended refactor:
+// - Split into smaller interfaces/services (e.g., UserAdminService, UserProfileService, UserRegistrationService)
+//   and inject only the narrow dependency needed per controller.
 @RequiredArgsConstructor
 public class UserService {
 
@@ -118,6 +128,14 @@ public class UserService {
                 try {
                     RoleName roleName = RoleName.valueOf(name);
                     return roleRepository.findByName(roleName)
+                        // TODO: SRP violation - UserService is responsible for user management but is also managing Role lifecycle.
+                        // Why this is risky:
+                        // - Assigning roles becomes coupled to role creation rules (defaults, description, permissions, etc.).
+                        // - Silent creation can mask configuration errors (typos in role name suddenly create a new Role row).
+                        // - Expanding Role (extra fields) will force changes in UserService, reducing cohesion.
+                        // Recommended refactor:
+                        // - Only allow assigning pre-existing roles; if missing, throw a clear BusinessException.
+                        // - Move role creation/maintenance into a dedicated RoleService or an admin provisioning flow.
                         .orElseGet(() -> roleRepository.save(Role.builder().name(roleName).build()));
                 } catch (IllegalArgumentException e) {
                     throw new BusinessException("Invalid role name: " + name);
