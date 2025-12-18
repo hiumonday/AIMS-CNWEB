@@ -67,6 +67,7 @@ public class VietQRService {
     }
 
     private PaymentStatus mapStatus(PaymentLinkStatus status) {
+        // SOLID: Mapping is hardcoded; new gateway statuses require code changes (OCP).
         return switch (status) {
             case PAID -> PaymentStatus.CAPTURED;
             case CANCELLED, EXPIRED, FAILED, UNDERPAID -> PaymentStatus.FAILED;
