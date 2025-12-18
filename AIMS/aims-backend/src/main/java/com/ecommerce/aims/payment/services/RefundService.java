@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RefundService {
 
+    // SOLID: This service currently mixes payment refund logic and order status updates.
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PayPalService payPalService;
     private final OrderRepository orderRepository;
@@ -30,6 +31,7 @@ public class RefundService {
         PaymentTransaction transaction = paymentTransactionRepository.findById(transactionId)
             .orElseThrow(() -> new NotFoundException("Transaction not found"));
         java.math.BigDecimal refundAmount = request.getAmount() != null ? request.getAmount() : transaction.getAmount();
+        // SOLID: Provider-specific branching means adding another refund provider edits this method (OCP).
         if (transaction.getProvider() == PaymentProvider.PAYPAL) {
             String captureId = transaction.getCaptureId() != null ? transaction.getCaptureId() : transaction.getProviderReference();
             payPalService.refund(captureId, refundAmount, transaction.getCurrency(), transaction);
@@ -46,6 +48,7 @@ public class RefundService {
     }
 
     private void updateOrderRefunded(Long orderId, boolean fullRefund) {
+        // SOLID: Order status changes are embedded here; consider moving to order domain service.
         if (orderId == null) {
             return;
         }

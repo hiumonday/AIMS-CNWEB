@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PaymentService {
 
+    // SOLID: This service coordinates transaction creation, provider dispatch, and order state updates.
+    // Consider splitting orchestration vs. order updates if/when refactoring.
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PayPalService payPalService;
     private final VietQRService vietQRService;
@@ -45,6 +47,7 @@ public class PaymentService {
             .build());
         PaymentTransaction saved = paymentTransactionRepository.save(transaction);
         PaymentResultResponse response;
+        // SOLID: Provider branching here means adding a new provider requires editing this method (OCP).
         if (request.getProvider() == PaymentProvider.PAYPAL) {
             response = payPalService.initiatePayment(saved, request);
         } else if (request.getProvider() == PaymentProvider.VIETQR) {
@@ -81,11 +84,13 @@ public class PaymentService {
                 .build();
         }
         paymentTransactionRepository.save(transaction);
+        // SOLID: Order status changes are mixed into payment capture; consider a domain event handler.
         updateOrderPaid(transaction.getOrderId());
         return response;
     }
 
     private void updateOrderPaid(Long orderId) {
+        // SOLID: This is order-domain behavior embedded in payment service (SRP).
         if (orderId == null) {
             return;
         }
