@@ -1,11 +1,7 @@
 package com.ecommerce.aims.product.dto;
 
-import com.ecommerce.aims.product.models.BookDetail;
-import com.ecommerce.aims.product.models.CdDetail;
-import com.ecommerce.aims.product.models.DvdDetail;
-import com.ecommerce.aims.product.models.NewspaperDetail;
 import com.ecommerce.aims.product.models.ProductStatus;
-import com.ecommerce.aims.product.models.ProductType;
+
 import java.math.BigDecimal;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +10,7 @@ import lombok.Data;
 @Builder
 public class ProductResponse {
     private Long id;
-    private ProductType productType;
+//    private ProductType productType;
     private ProductStatus status;
     private String barcode;
     private String title;
@@ -32,8 +28,4 @@ public class ProductResponse {
     private BigDecimal currentPrice;
     private Integer stock;
 
-    private BookDetail bookDetail;
-    private NewspaperDetail newspaperDetail;
-    private CdDetail cdDetail;
-    private DvdDetail dvdDetail;
 }

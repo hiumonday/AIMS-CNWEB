@@ -1,11 +1,6 @@
 package com.ecommerce.aims.product.dto;
 
-import com.ecommerce.aims.product.models.BookDetail;
-import com.ecommerce.aims.product.models.CdDetail;
-import com.ecommerce.aims.product.models.DvdDetail;
-import com.ecommerce.aims.product.models.NewspaperDetail;
 import com.ecommerce.aims.product.models.ProductStatus;
-import com.ecommerce.aims.product.models.ProductType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -14,7 +9,8 @@ import lombok.Data;
 
 @Data
 public class ProductRequest {
-    private ProductType productType;
+    @NotNull
+    // private ProductType productType;
     private ProductStatus status;
     @NotBlank
     private String barcode;
@@ -41,9 +37,4 @@ public class ProductRequest {
     private BigDecimal currentPrice;
     @PositiveOrZero
     private Integer stock;
-
-    private BookDetail bookDetail;
-    private NewspaperDetail newspaperDetail;
-    private CdDetail cdDetail;
-    private DvdDetail dvdDetail;
 }

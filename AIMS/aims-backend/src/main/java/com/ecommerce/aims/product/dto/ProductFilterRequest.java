@@ -1,6 +1,5 @@
 package com.ecommerce.aims.product.dto;
 
-import com.ecommerce.aims.product.models.ProductType;
 import java.math.BigDecimal;
 import lombok.Data;
 import jakarta.validation.constraints.Max;

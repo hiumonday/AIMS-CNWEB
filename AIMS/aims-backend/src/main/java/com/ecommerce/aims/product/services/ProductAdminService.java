@@ -8,9 +8,9 @@ import com.ecommerce.aims.product.dto.ProductResponse;
 import com.ecommerce.aims.product.models.Product;
 import com.ecommerce.aims.product.models.ProductHistory;
 import com.ecommerce.aims.product.models.ProductStatus;
-import com.ecommerce.aims.product.models.ProductType;
 import com.ecommerce.aims.product.repository.ProductHistoryRepository;
 import com.ecommerce.aims.product.repository.ProductRepository;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -32,8 +32,9 @@ public class ProductAdminService {
         Product product = new Product();
         applyRequest(product, request);
         product.setStatus(request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE);
-        Product saved = Objects.requireNonNull(productRepository.save(product));
-        Objects.requireNonNull(historyRepository.save(ProductHistory.builder().product(saved).action("CREATE").note("Created product").build()));
+        Product saved = productRepository.save(product);
+        historyRepository
+                .save(ProductHistory.builder().product(saved).action("CREATE").note("Created product").build());
         return toResponse(saved);
     }
 
@@ -42,19 +43,19 @@ public class ProductAdminService {
         Long requiredId = Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(request, "request must not be null");
         validateRequest(request);
-        Product product = productRepository.findById(requiredId)
-            .orElseThrow(() -> new NotFoundException("Product not found"));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Product not found"));
         applyRequest(product, request);
-        Product saved = Objects.requireNonNull(productRepository.save(product));
-        Objects.requireNonNull(historyRepository.save(ProductHistory.builder().product(saved).action("UPDATE").note("Updated product").build()));
+        Product saved = productRepository.save(product);
+        historyRepository
+                .save(ProductHistory.builder().product(saved).action("UPDATE").note("Updated product").build());
         return toResponse(saved);
     }
 
     @Transactional
     public void deleteOrDeactivate(Long id) {
-        Long requiredId = Objects.requireNonNull(id, "id must not be null");
-        Product product = productRepository.findById(requiredId)
-            .orElseThrow(() -> new NotFoundException("Product not found"));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Product not found"));
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.atStartOfDay();
         LocalDateTime end = today.plusDays(1).atStartOfDay();
@@ -66,10 +67,12 @@ public class ProductAdminService {
         if (stock != null && stock > 0) {
             product.setStatus(ProductStatus.DEACTIVATED);
             productRepository.save(product);
-            Objects.requireNonNull(historyRepository.save(ProductHistory.builder().product(product).action("DEACTIVATE").note("Stock remaining, deactivated").build()));
+            historyRepository.save(ProductHistory.builder().product(product).action("DEACTIVATE")
+                    .note("Stock remaining, deactivated").build());
             return;
         }
-        Objects.requireNonNull(historyRepository.save(ProductHistory.builder().product(null).action("DELETE").note("Deleted product " + product.getId()).build()));
+        historyRepository.save(ProductHistory.builder().product(null).action("DELETE")
+                .note("Deleted product " + product.getId()).build());
         productRepository.delete(product);
     }
 
@@ -131,26 +134,26 @@ public class ProductAdminService {
     private ProductResponse toResponse(Product product) {
         Product requiredProduct = Objects.requireNonNull(product, "product must not be null");
         return ProductResponse.builder()
-            .id(requiredProduct.getId())
-            .productType(requiredProduct.getProductType())
-            .status(requiredProduct.getStatus())
-            .barcode(requiredProduct.getBarcode())
-            .title(requiredProduct.getTitle())
-            .category(requiredProduct.getCategory())
-            .conditionLabel(requiredProduct.getConditionLabel())
-            .dominantColor(requiredProduct.getDominantColor())
-            .returnPolicy(requiredProduct.getReturnPolicy())
-            .height(requiredProduct.getHeight())
-            .width(requiredProduct.getWidth())
-            .length(requiredProduct.getLength())
-            .weight(requiredProduct.getWeight())
-            .originalValue(requiredProduct.getOriginalValue())
-            .currentPrice(requiredProduct.getCurrentPrice())
-            .stock(requiredProduct.getStock())
-            .bookDetail(requiredProduct.getBookDetail())
-            .newspaperDetail(requiredProduct.getNewspaperDetail())
-            .cdDetail(requiredProduct.getCdDetail())
-            .dvdDetail(requiredProduct.getDvdDetail())
-            .build();
+                .id(product.getId())
+                .productType(product.getProductType())
+                .status(product.getStatus())
+                .barcode(product.getBarcode())
+                .title(product.getTitle())
+                .category(product.getCategory())
+                .conditionLabel(product.getConditionLabel())
+                .dominantColor(product.getDominantColor())
+                .returnPolicy(product.getReturnPolicy())
+                .height(product.getHeight())
+                .width(product.getWidth())
+                .length(product.getLength())
+                .weight(product.getWeight())
+                .originalValue(product.getOriginalValue())
+                .currentPrice(product.getCurrentPrice())
+                .stock(product.getStock())
+                .bookDetail(product.getBookDetail())
+                .newspaperDetail(product.getNewspaperDetail())
+                .cdDetail(product.getCdDetail())
+                .dvdDetail(product.getDvdDetail())
+                .build();
     }
 }

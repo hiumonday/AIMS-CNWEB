@@ -1,24 +1,19 @@
 package com.ecommerce.aims.product.models;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "products")
@@ -31,8 +26,8 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "type_id", nullable = false)
     private ProductType productType;
 
     @Enumerated(EnumType.STRING)
@@ -61,21 +56,10 @@ public class Product {
     @Column(nullable = false)
     private Integer stock;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "book_detail_id")
-    private BookDetail bookDetail;
-
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "newspaper_detail_id")
-    private NewspaperDetail newspaperDetail;
-
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "cd_detail_id")
-    private CdDetail cdDetail;
-
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "dvd_detail_id")
-    private DvdDetail dvdDetail;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    @Builder.Default
+    private Map<String, Object> attributes = new HashMap<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
