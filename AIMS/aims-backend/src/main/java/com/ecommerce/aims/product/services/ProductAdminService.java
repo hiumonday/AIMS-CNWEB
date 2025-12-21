@@ -84,7 +84,7 @@ public class ProductAdminService {
                 throw new BusinessException("Current price must be between 30% and 150% of original value");
             }
         }
-        product.setProductType(request.getProductType());
+//        product.setProductType(request.getProductType());
         product.setStatus(request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE);
         product.setBarcode(request.getBarcode());
         product.setTitle(request.getTitle());
@@ -99,10 +99,10 @@ public class ProductAdminService {
         product.setOriginalValue(request.getOriginalValue());
         product.setCurrentPrice(request.getCurrentPrice());
         product.setStock(request.getStock());
-        product.setBookDetail(request.getBookDetail());
-        product.setNewspaperDetail(request.getNewspaperDetail());
-        product.setCdDetail(request.getCdDetail());
-        product.setDvdDetail(request.getDvdDetail());
+//        product.setBookDetail(request.getBookDetail());
+//        product.setNewspaperDetail(request.getNewspaperDetail());
+//        product.setCdDetail(request.getCdDetail());
+//        product.setDvdDetail(request.getDvdDetail());
     }
 
     private void validateRequest(ProductRequest request) {
@@ -116,26 +116,26 @@ public class ProductAdminService {
         if (request.getStock() != null && request.getStock() < 0) {
             throw new BusinessException("Stock cannot be negative");
         }
-        ProductType type = request.getProductType();
-        if (type == ProductType.BOOK && request.getBookDetail() == null) {
-            throw new BusinessException("Book details are required for BOOK type");
-        }
-        if (type == ProductType.NEWSPAPER && request.getNewspaperDetail() == null) {
-            throw new BusinessException("Newspaper details are required for NEWSPAPER type");
-        }
-        if (type == ProductType.CD && request.getCdDetail() == null) {
-            throw new BusinessException("CD details are required for CD type");
-        }
-        if (type == ProductType.DVD && request.getDvdDetail() == null) {
-            throw new BusinessException("DVD details are required for DVD type");
-        }
+//        ProductType type = request.getProductType();
+//        if (type == ProductType.BOOK && request.getBookDetail() == null) {
+//            throw new BusinessException("Book details are required for BOOK type");
+//        }
+//        if (type == ProductType.NEWSPAPER && request.getNewspaperDetail() == null) {
+//            throw new BusinessException("Newspaper details are required for NEWSPAPER type");
+//        }
+//        if (type == ProductType.CD && request.getCdDetail() == null) {
+//            throw new BusinessException("CD details are required for CD type");
+//        }
+//        if (type == ProductType.DVD && request.getDvdDetail() == null) {
+//            throw new BusinessException("DVD details are required for DVD type");
+//        }
     }
 
     private ProductResponse toResponse(Product product) {
         Product requiredProduct = Objects.requireNonNull(product, "product must not be null");
         return ProductResponse.builder()
                 .id(product.getId())
-                .productType(product.getProductType())
+//                .productType(product.getProductType())
                 .status(product.getStatus())
                 .barcode(product.getBarcode())
                 .title(product.getTitle())
@@ -150,10 +150,10 @@ public class ProductAdminService {
                 .originalValue(product.getOriginalValue())
                 .currentPrice(product.getCurrentPrice())
                 .stock(product.getStock())
-                .bookDetail(product.getBookDetail())
-                .newspaperDetail(product.getNewspaperDetail())
-                .cdDetail(product.getCdDetail())
-                .dvdDetail(product.getDvdDetail())
+//                .bookDetail(product.getBookDetail())
+//                .newspaperDetail(product.getNewspaperDetail())
+//                .cdDetail(product.getCdDetail())
+//                .dvdDetail(product.getDvdDetail())
                 .build();
     }
 }

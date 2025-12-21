@@ -58,9 +58,9 @@ public class ProductService {
             if (StringUtils.hasText(request.getCategory())) {
                 predicates.add(cb.equal(cb.lower(root.get("category")), request.getCategory().toLowerCase()));
             }
-            if (request.getProductType() != null) {
-                predicates.add(cb.equal(root.get("productType"), request.getProductType()));
-            }
+//            if (request.getProductType() != null) {
+//                predicates.add(cb.equal(root.get("productType"), request.getProductType()));
+//            }
             predicates.add(cb.equal(root.get("status"), ProductStatus.ACTIVE));
             if (request.getMinPrice() != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("currentPrice"), request.getMinPrice()));
@@ -78,7 +78,7 @@ public class ProductService {
         }
         return ProductResponse.builder()
             .id(product.getId())
-            .productType(product.getProductType())
+//            .productType(product.getProductType())
             .status(product.getStatus())
             .barcode(product.getBarcode())
             .title(product.getTitle())
@@ -93,10 +93,10 @@ public class ProductService {
             .originalValue(product.getOriginalValue())
             .currentPrice(product.getCurrentPrice())
             .stock(product.getStock())
-            .bookDetail(product.getBookDetail())
-            .newspaperDetail(product.getNewspaperDetail())
-            .cdDetail(product.getCdDetail())
-            .dvdDetail(product.getDvdDetail())
+//            .bookDetail(product.getBookDetail())
+//            .newspaperDetail(product.getNewspaperDetail())
+//            .cdDetail(product.getCdDetail())
+//            .dvdDetail(product.getDvdDetail())
             .build();
     }
 }

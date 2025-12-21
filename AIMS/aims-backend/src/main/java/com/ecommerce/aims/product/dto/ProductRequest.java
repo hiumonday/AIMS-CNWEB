@@ -9,7 +9,7 @@ import lombok.Data;
 
 @Data
 public class ProductRequest {
-    @NotNull
+    // @NotNull
     // private ProductType productType;
     private ProductStatus status;
     @NotBlank

@@ -11,7 +11,7 @@ public class ProductFilterRequest {
     private String category;
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
-    private ProductType productType;
+//    private ProductType productType;
     @Min(0)
     private int page = 0;
     @Min(1)
