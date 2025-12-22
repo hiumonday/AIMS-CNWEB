@@ -32,6 +32,6 @@ build/
 ### VS Code ###
 .vscode/
 
-.application-dev.yml
-.application-prod.yml
-.application-staging.yml
+/src/main/resources/.application-dev.yml
+/src/main/resources/.application-prod.yml
+/src/main/resources/.application-staging.yml

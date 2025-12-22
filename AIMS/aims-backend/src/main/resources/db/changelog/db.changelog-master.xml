@@ -8,5 +8,8 @@
     <include file="db/changelog/update-order-table-changelog.xml"/>
     <include file="db/changelog/migrate-product-changelog.xml"/>
     <include file="db/changelog/seed-product-data-changelog.xml"/>
+    <include file="db/changelog/auth-changelog.xml"/>
+    <include file="db/changelog/drop-pbac.xml"/>
+    <include file="db/changelog/db.changelog-master.yaml"/>
 
 </databaseChangeLog>
