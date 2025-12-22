@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 @SpringBootApplication
 @EnableConfigurationProperties({PayPalProperties.class, VietQrProperties.class})
-public class AimsApplication {
+public class AimsApplication {  
     public static void main(String[] args) {
         SpringApplication.run(AimsApplication.class, args);
     }

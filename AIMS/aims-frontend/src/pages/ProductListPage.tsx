@@ -8,7 +8,6 @@ import "./ProductListPage.css";
 type SortKey = "title" | "price-asc" | "price-desc";
 
 const itemsPerPage = 9;
-const PRICE_FILTER_FACTOR = 1000; // Keep display currency consistent with backend amounts
 const categories: Array<Category | "All"> = [
   "All",
   "Book",
@@ -18,9 +17,9 @@ const categories: Array<Category | "All"> = [
 ];
 const priceRanges = [
   { label: "All Prices", value: "all" },
-  { label: "< $10", value: "<10" },
-  { label: "$10 - $20", value: "10-20" },
-  { label: "$20 - $30", value: "20-30" },
+  { label: "0 - 200.000 VND", value: "0-200000" },
+  { label: "200.000 - 500.000 VND", value: "200000-500000" },
+  { label: "> 500.000 VND", value: "500000+" },
 ];
 
 const sortKeyToParam = (key: SortKey) => {
@@ -31,17 +30,22 @@ const sortKeyToParam = (key: SortKey) => {
 
 const priceBandToRange = (
   band: string
-): { min?: number; max?: number } => {
+): { minPrice?: number; maxPrice?: number } => {
   switch (band) {
-    case "<10":
-      return { max: 10 };
-    case "10-20":
-      return { min: 10, max: 20 };
-    case "20-30":
-      return { min: 20, max: 30 };
+    case "0-200000":
+      return { minPrice: 0, maxPrice: 200000 };
+    case "200000-500000":
+      return { minPrice: 200000, maxPrice: 500000 };
+    case "500000+":
+      return { minPrice: 500000 };
     default:
       return {};
   }
+};
+
+const formatVnd = (value?: number) => {
+  if (value === null || value === undefined) return undefined;
+  return `${value.toLocaleString("vi-VN")} VND`;
 };
 
 const ProductListPage = () => {
@@ -69,11 +73,8 @@ const ProductListPage = () => {
   }, [initialCategory]);
 
   useEffect(() => {
-    const { min, max } = priceBandToRange(priceBand);
-    const minPrice =
-      min !== undefined ? min * PRICE_FILTER_FACTOR : undefined;
-    const maxPrice =
-      max !== undefined ? max * PRICE_FILTER_FACTOR : undefined;
+    const { minPrice, maxPrice } = priceBandToRange(priceBand);
+    const priceRange = priceBand === "all" ? undefined : priceBand;
 
     setLoading(true);
     setError(null);
@@ -83,6 +84,7 @@ const ProductListPage = () => {
       limit: pageSize,
       query: search.trim() || undefined,
       category,
+      priceRange,
       minPrice,
       maxPrice,
       sort: sortKeyToParam(sort),
@@ -215,77 +217,94 @@ const ProductListPage = () => {
         )}
         {!loading &&
           !error &&
-          products.map((item) => (
-            <article key={item.id} className="card">
-              <div className="card__img">
-                <img src={item.image} alt={item.title} />
-              </div>
-              <div className="card__body">
-                <span className="pill">{item.category}</span>
-                <h3>{item.title}</h3>
-                <p className="muted">{item.genre}</p>
-                <p className="muted small">{item.shortDesc}</p>
-                <div className="card__meta">
-                  <span className="price">${item.price.toFixed(2)}</span>
-                  <span className="stock">{item.stock} in stock</span>
+          products.map((item) => {
+            const typeLabel = item.typeCode || item.category;
+            const categoryLabel = item.categoryName || item.category;
+            const genreLabel =
+              item.genre && item.genre !== categoryLabel ? item.genre : undefined;
+            const priceLabel = formatVnd(item.currentPrice);
+
+            return (
+              <article key={item.id} className="card">
+                <div className="card__img">
+                  <img src={item.image} alt={item.title} />
                 </div>
-                <div className="card__actions">
-                  <div className="qty-control small">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setQuantities((prev) => ({
-                          ...prev,
-                          [item.id]: Math.max(1, (prev[item.id] || 1) - 1),
-                        }))
-                      }
-                    >
-                      -
-                    </button>
-                    <input
-                      type="number"
-                      min={1}
-                      max={item.stock}
-                      value={quantities[item.id] || 1}
-                      onChange={(e) =>
-                        setQuantities((prev) => ({
-                          ...prev,
-                          [item.id]: Math.max(
-                            1,
-                            Math.min(item.stock, Number(e.target.value) || 1)
-                          ),
-                        }))
-                      }
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setQuantities((prev) => ({
-                          ...prev,
-                          [item.id]: Math.min(
-                            item.stock,
-                            (prev[item.id] || 1) + 1
-                          ),
-                        }))
-                      }
-                    >
-                      +
-                    </button>
+                <div className="card__body">
+                  <span className="pill">{typeLabel}</span>
+                  <h3>{item.title}</h3>
+                  <p className="muted">{categoryLabel}</p>
+                  {genreLabel && <p className="muted small">{genreLabel}</p>}
+                  {item.barcode && (
+                    <p className="muted small">Barcode: {item.barcode}</p>
+                  )}
+                  <p className="muted small">{item.shortDesc}</p>
+                  <div className="card__meta">
+                    <div>
+                      <span className="price">${item.price.toFixed(2)}</span>
+                      {priceLabel && (
+                        <div className="muted small">{priceLabel}</div>
+                      )}
+                    </div>
+                    <span className="stock">{item.stock} in stock</span>
                   </div>
-                  <button
-                    className="btn primary"
-                    type="button"
-                    onClick={() => addItem(item.id, quantities[item.id] || 1)}
-                  >
-                    Add to cart
-                  </button>
-                  <Link className="btn light" to={`/product/${item.id}`}>
-                    View details
-                  </Link>
+                  <div className="card__actions">
+                    <div className="qty-control small">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setQuantities((prev) => ({
+                            ...prev,
+                            [item.id]: Math.max(1, (prev[item.id] || 1) - 1),
+                          }))
+                        }
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={item.stock}
+                        value={quantities[item.id] || 1}
+                        onChange={(e) =>
+                          setQuantities((prev) => ({
+                            ...prev,
+                            [item.id]: Math.max(
+                              1,
+                              Math.min(item.stock, Number(e.target.value) || 1)
+                            ),
+                          }))
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setQuantities((prev) => ({
+                            ...prev,
+                            [item.id]: Math.min(
+                              item.stock,
+                              (prev[item.id] || 1) + 1
+                            ),
+                          }))
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      className="btn primary"
+                      type="button"
+                      onClick={() => addItem(item.id, quantities[item.id] || 1)}
+                    >
+                      Add to cart
+                    </button>
+                    <Link className="btn light" to={`/product/${item.id}`}>
+                      View details
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
       </section>
 
       <div className="pagination">

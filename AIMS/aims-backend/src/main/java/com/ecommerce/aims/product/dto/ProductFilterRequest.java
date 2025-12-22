@@ -10,6 +10,7 @@ public class ProductFilterRequest {
     private String query;
     private String category;
     private String typeCode;
+    private String priceRange;
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
 //    private ProductType productType;

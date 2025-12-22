@@ -7,6 +7,7 @@ import com.ecommerce.aims.product.dto.ProductResponse;
 import com.ecommerce.aims.product.models.Product;
 import com.ecommerce.aims.product.models.ProductStatus;
 import com.ecommerce.aims.product.repository.ProductRepository;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +21,9 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class ProductService {
+
+    private static final BigDecimal PRICE_200K = new BigDecimal("200000");
+    private static final BigDecimal PRICE_500K = new BigDecimal("500000");
 
     private final ProductRepository productRepository;
 
@@ -65,11 +69,33 @@ public class ProductService {
                 ));
             }
             predicates.add(cb.equal(root.get("status"), ProductStatus.ACTIVE));
-            if (request.getMinPrice() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("currentPrice"), request.getMinPrice()));
+            BigDecimal minPrice = request.getMinPrice();
+            BigDecimal maxPrice = request.getMaxPrice();
+            String priceRange = request.getPriceRange();
+            if (StringUtils.hasText(priceRange)) {
+                switch (priceRange.trim()) {
+                    case "0-200000" -> {
+                        minPrice = BigDecimal.ZERO;
+                        maxPrice = PRICE_200K;
+                    }
+                    case "200000-500000" -> {
+                        minPrice = PRICE_200K;
+                        maxPrice = PRICE_500K;
+                    }
+                    case "500000+", "500000" -> {
+                        minPrice = PRICE_500K;
+                        maxPrice = null;
+                    }
+                    default -> {
+                        // Ignore unknown price range.
+                    }
+                }
             }
-            if (request.getMaxPrice() != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("currentPrice"), request.getMaxPrice()));
+            if (minPrice != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("currentPrice"), minPrice));
+            }
+            if (maxPrice != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("currentPrice"), maxPrice));
             }
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };

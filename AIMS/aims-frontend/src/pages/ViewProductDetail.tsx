@@ -42,6 +42,11 @@ const ViewProductDetail: FC = () => {
   const [qty, setQty] = useState<number>(1);
   const total = product ? (product.price * qty).toFixed(2) : "0.00";
 
+  const formatVnd = (value?: number) => {
+    if (value === null || value === undefined) return undefined;
+    return `${value.toLocaleString("vi-VN")} VND`;
+  };
+
   const changeQty = (delta: number) => {
     setQty(current => Math.max(1, Math.min(99, current + delta)));
   };
@@ -52,72 +57,48 @@ const ViewProductDetail: FC = () => {
     alert(`Added ${qty} of "${product.title}" to cart.`);
   };
 
-  const renderDetailRows = (
-    rows: Array<{ label: string; value: string | number | null | undefined }>
-  ) =>
-    rows.map((row) => {
-      const value =
-        Array.isArray(row.value) && row.value.length > 0
-          ? row.value.join(", ")
-          : row.value;
-      return (
-        <div className="detail-row" key={row.label}>
-          <span>{row.label}:</span>
-          <span>{value ?? "N/A"}</span>
-        </div>
-      );
-    });
-
-  const typeSpecific = () => {
-    if (!product) return null;
-    const d = product.details || {};
-    switch (product.category) {
-      case "Book":
-        return renderDetailRows([
-          { label: "Author(s)", value: d.author },
-          { label: "Cover Type", value: d.coverType },
-          { label: "Publisher", value: d.publisher },
-          { label: "Publication Date", value: d.publishDate },
-          { label: "Pages", value: d.pages },
-          { label: "Language", value: d.language },
-          { label: "Genre", value: product.genre },
-        ]);
-      case "Newspaper":
-        return renderDetailRows([
-          { label: "Editor-in-chief", value: d.editor },
-          { label: "Publisher", value: d.publisher },
-          { label: "Publication Date", value: d.issueDate },
-          { label: "Issue Number", value: d.issueNumber },
-          { label: "Frequency", value: d.frequency },
-          { label: "Sections", value: d.sections },
-          { label: "Language", value: d.language },
-          { label: "Genre/Section", value: product.genre },
-        ]);
-      case "CD":
-        return renderDetailRows([
-          { label: "Artist(s)", value: d.artist },
-          { label: "Record Label", value: d.label },
-          { label: "Disc Type", value: d.discType },
-          { label: "Tracks", value: d.tracks },
-          { label: "Track List", value: d.trackList },
-          { label: "Release Date", value: d.release },
-          { label: "Genre", value: product.genre },
-        ]);
-      case "DVD":
-        return renderDetailRows([
-          { label: "Disc Type", value: d.discType },
-          { label: "Director", value: d.director },
-          { label: "Runtime", value: d.runtime },
-          { label: "Studio", value: d.studio },
-          { label: "Language", value: d.language },
-          { label: "Subtitles", value: d.subtitles },
-          { label: "Release Date", value: d.release },
-          { label: "Genre", value: product.genre },
-        ]);
-      default:
-        return null;
+  const formatDetailValue = (value: unknown): string => {
+    if (value === null || value === undefined || value === "") return "N/A";
+    if (Array.isArray(value)) {
+      if (value.length === 0) return "N/A";
+      return value
+        .map((entry) => {
+          if (typeof entry === "string" || typeof entry === "number") {
+            return String(entry);
+          }
+          if (entry && typeof entry === "object") {
+            const title = (entry as { title?: unknown }).title;
+            const length = (entry as { length?: unknown }).length;
+            if (title && length) return `${title} (${length})`;
+            if (title) return String(title);
+            if (length) return String(length);
+            return JSON.stringify(entry);
+          }
+          return String(entry);
+        })
+        .join(", ");
     }
+    if (typeof value === "object") {
+      return JSON.stringify(value);
+    }
+    return String(value);
   };
+
+  const renderDetailRows = (
+    rows: Array<{ label: string; value: unknown }>
+  ) =>
+    rows.map((row) => (
+      <div className="detail-row" key={row.label}>
+        <span>{row.label}:</span>
+        <span>{formatDetailValue(row.value)}</span>
+      </div>
+    ));
+
+  const formatAttributeLabel = (key: string) =>
+    key
+      .replace(/_/g, " ")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
 
   if (loading) {
     return (
@@ -137,6 +118,46 @@ const ViewProductDetail: FC = () => {
       </div>
     );
   }
+
+  const typeLabel = product.typeCode || product.category;
+  const categoryLabel = product.categoryName || product.genre || product.category;
+  const priceLabel = formatVnd(product.currentPrice);
+  const originalPriceLabel = formatVnd(product.originalValue);
+
+  const baseRows = [
+    { label: "Type", value: typeLabel },
+    { label: "Status", value: product.status },
+    { label: "Barcode", value: product.barcode },
+    { label: "Category", value: categoryLabel },
+    { label: "Condition", value: product.conditionLabel },
+    { label: "Return Policy", value: product.returnPolicy },
+    { label: "Height", value: product.dimensions?.height },
+    { label: "Width", value: product.dimensions?.width },
+    { label: "Length", value: product.dimensions?.length },
+    { label: "Weight", value: product.dimensions?.weight },
+    { label: "Original Value", value: originalPriceLabel },
+    { label: "Current Price", value: priceLabel },
+  ].filter((row) => row.value !== undefined && row.value !== null && row.value !== "");
+
+  const attributeRows =
+    product.attributes && Object.keys(product.attributes).length > 0
+      ? Object.entries(product.attributes)
+          .filter(([, value]) => value !== undefined && value !== null && value !== "")
+          .map(([key, value]) => ({
+            label: formatAttributeLabel(key),
+            value,
+          }))
+      : [];
+
+  const legacyDetailRows =
+    product.details && Object.keys(product.details).length > 0
+      ? Object.entries(product.details).map(([key, value]) => ({
+          label: formatAttributeLabel(key),
+          value,
+        }))
+      : [];
+
+  const detailRows = attributeRows.length > 0 ? attributeRows : legacyDetailRows;
 
   return (
     <div className="content">
@@ -165,17 +186,24 @@ const ViewProductDetail: FC = () => {
         </div>
 
         <div className="product__info-card">
-          <span className="pill">{product.category}</span>
+          <span className="pill">{typeLabel}</span>
           <h1 className="title">{product.title}</h1>
-          <p className="category">{product.genre}</p>
+          <p className="category">{categoryLabel}</p>
           <div className="price-main">${product.price.toFixed(2)}</div>
+          {priceLabel && <p className="muted small">{priceLabel}</p>}
           <p className="stock">Stock available: {product.stock} units</p>
           <p className="desc muted">{product.shortDesc}</p>
 
           <div className="details-card">
             <h3>Product Details</h3>
-            {typeSpecific()}
+            {renderDetailRows(baseRows)}
           </div>
+          {detailRows.length > 0 && (
+            <div className="details-card">
+              <h3>Attributes</h3>
+              {renderDetailRows(detailRows)}
+            </div>
+          )}
 
           <div className="cart-card">
             <h3>Add to Cart</h3>

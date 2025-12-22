@@ -1,5 +1,16 @@
 export type Category = 'Book' | 'CD' | 'Newspaper' | 'DVD';
 
+export type ProductTypeCode = 'BOOK' | 'CD' | 'NEWSPAPER' | 'DVD';
+
+export type ProductStatus = 'ACTIVE' | 'DEACTIVATED';
+
+export type ProductDimensions = {
+  height?: number;
+  width?: number;
+  length?: number;
+  weight?: number;
+};
+
 export type Product = {
   id: string;
   title: string;
@@ -9,6 +20,17 @@ export type Product = {
   stock: number;
   image: string;
   shortDesc: string;
+  typeCode?: ProductTypeCode;
+  status?: ProductStatus;
+  barcode?: string;
+  categoryName?: string;
+  conditionLabel?: string;
+  dominantColor?: string;
+  returnPolicy?: string;
+  originalValue?: number;
+  currentPrice?: number;
+  dimensions?: ProductDimensions;
+  attributes?: Record<string, unknown>;
   details?: Record<string, string | number>;
 };
 
