@@ -9,7 +9,7 @@ spring:
       continue-on-error: true
   security:
     user:
-      email: admin
+      name: admin
       password: admin
       roles: ADMIN,PRODUCT_MANAGER
   liquibase:
