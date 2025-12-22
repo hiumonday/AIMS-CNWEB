@@ -7,4 +7,6 @@
     <include file="db/changelog/init-changelog.xml"/>
     <include file="db/changelog/update-order-table-changelog.xml"/>
     <include file="db/changelog/migrate-product-changelog.xml"/>
+    <include file="db/changelog/seed-product-data-changelog.xml"/>
+
 </databaseChangeLog>
