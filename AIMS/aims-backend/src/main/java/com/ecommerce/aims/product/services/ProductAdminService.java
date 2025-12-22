@@ -8,15 +8,23 @@ import com.ecommerce.aims.product.dto.ProductResponse;
 import com.ecommerce.aims.product.models.Product;
 import com.ecommerce.aims.product.models.ProductHistory;
 import com.ecommerce.aims.product.models.ProductStatus;
+import com.ecommerce.aims.product.models.ProductType;
+import com.ecommerce.aims.product.models.TypeAttribute;
 import com.ecommerce.aims.product.repository.ProductHistoryRepository;
 import com.ecommerce.aims.product.repository.ProductRepository;
+import com.ecommerce.aims.product.repository.ProductTypeRepository;
+import com.ecommerce.aims.product.repository.TypeAttributeRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +32,8 @@ public class ProductAdminService {
 
     private final ProductRepository productRepository;
     private final ProductHistoryRepository historyRepository;
+    private final ProductTypeRepository productTypeRepository;
+    private final TypeAttributeRepository typeAttributeRepository;
 
     @Transactional
     public ProductResponse create(ProductRequest request) {
@@ -84,7 +94,13 @@ public class ProductAdminService {
                 throw new BusinessException("Current price must be between 30% and 150% of original value");
             }
         }
-//        product.setProductType(request.getProductType());
+        ProductType productType = resolveProductType(request.getTypeCode());
+        Map<String, Object> attributes = request.getAttributes();
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+        validateRequiredAttributes(productType, attributes);
+        product.setProductType(productType);
         product.setStatus(request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE);
         product.setBarcode(request.getBarcode());
         product.setTitle(request.getTitle());
@@ -99,6 +115,7 @@ public class ProductAdminService {
         product.setOriginalValue(request.getOriginalValue());
         product.setCurrentPrice(request.getCurrentPrice());
         product.setStock(request.getStock());
+        product.setAttributes(attributes);
 //        product.setBookDetail(request.getBookDetail());
 //        product.setNewspaperDetail(request.getNewspaperDetail());
 //        product.setCdDetail(request.getCdDetail());
@@ -112,6 +129,9 @@ public class ProductAdminService {
         }
         if (request.getCurrentPrice() != null && request.getCurrentPrice().signum() <= 0) {
             throw new BusinessException("Current price must be positive");
+        }
+        if (request.getStock() == null) {
+            throw new BusinessException("Stock is required");
         }
         if (request.getStock() != null && request.getStock() < 0) {
             throw new BusinessException("Stock cannot be negative");
@@ -131,11 +151,46 @@ public class ProductAdminService {
 //        }
     }
 
+    private ProductType resolveProductType(String typeCode) {
+        if (!StringUtils.hasText(typeCode)) {
+            throw new BusinessException("Product type code is required");
+        }
+        return productTypeRepository.findByCodeIgnoreCase(typeCode.trim())
+            .orElseThrow(() -> new NotFoundException("Product type not found"));
+    }
+
+    private void validateRequiredAttributes(ProductType productType, Map<String, Object> attributes) {
+        List<TypeAttribute> requiredAttributes = typeAttributeRepository.findRequiredByProductType(productType);
+        if (requiredAttributes.isEmpty()) {
+            return;
+        }
+        if (attributes == null || attributes.isEmpty()) {
+            throw new BusinessException("Attributes are required for product type " + productType.getCode());
+        }
+        List<String> missing = requiredAttributes.stream()
+            .map(TypeAttribute::getKey)
+            .filter(key -> !attributes.containsKey(key) || isBlankValue(attributes.get(key)))
+            .toList();
+        if (!missing.isEmpty()) {
+            throw new BusinessException("Missing required attributes: " + String.join(", ", missing));
+        }
+    }
+
+    private boolean isBlankValue(Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (value instanceof String str) {
+            return !StringUtils.hasText(str);
+        }
+        return false;
+    }
+
     private ProductResponse toResponse(Product product) {
         Product requiredProduct = Objects.requireNonNull(product, "product must not be null");
         return ProductResponse.builder()
                 .id(product.getId())
-//                .productType(product.getProductType())
+                .typeCode(product.getProductType() != null ? product.getProductType().getCode() : null)
                 .status(product.getStatus())
                 .barcode(product.getBarcode())
                 .title(product.getTitle())
@@ -150,6 +205,7 @@ public class ProductAdminService {
                 .originalValue(product.getOriginalValue())
                 .currentPrice(product.getCurrentPrice())
                 .stock(product.getStock())
+                .attributes(product.getAttributes())
 //                .bookDetail(product.getBookDetail())
 //                .newspaperDetail(product.getNewspaperDetail())
 //                .cdDetail(product.getCdDetail())
