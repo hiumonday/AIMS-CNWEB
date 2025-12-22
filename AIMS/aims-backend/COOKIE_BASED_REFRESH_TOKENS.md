@@ -298,15 +298,6 @@ public boolean isTokenValid(String token, UserDetails userDetails) {
     User user = userRepository.findByEmail(userDetails.getUsername()).orElseThrow();
     Long pwdChangeAt = extractClaim(token, claims -> claims.get("pwdChangeAt", Long.class));
 
-    if (user.getLastPasswordChangeAt() != null) {
-        long tokenPwdChange = pwdChangeAt != null ? pwdChangeAt : 0;
-        long userPwdChange = user.getLastPasswordChangeAt().toInstant(ZoneOffset.UTC).toEpochMilli();
-
-        if (userPwdChange > tokenPwdChange) {
-            return false; // Password changed after token issued
-        }
-    }
-
     return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
 }
 ```
