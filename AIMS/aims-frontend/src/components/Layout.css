@@ -70,7 +70,7 @@ a {
 .nav__links {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 20px;
   color: #1f1f1f;
   font-weight: 600;
   text-transform: uppercase;

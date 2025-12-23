@@ -2,6 +2,135 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import './LandingPage.css';
 
+// Interactive 3D Book component
+const InteractiveBook = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [pageNum, setPageNum] = useState(0); // 0: Bìa, 1: Trang 1, 2: Trang 2...
+
+  const handleBookClick = () => {
+    if (!isOpen) {
+      setIsOpen(true);
+    }
+  };
+
+  const handleNextPage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (pageNum < 3) setPageNum(pageNum + 1);
+  };
+
+  const handlePrevPage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (pageNum > 0) setPageNum(pageNum - 1);
+  };
+
+  const handleCloseBook = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen(false);
+    setPageNum(0);
+  };
+
+  return (
+    <div className="book-scene">
+      <div
+        className={`book-object ${isOpen ? 'is-open' : ''}`}
+        onClick={handleBookClick}
+      >
+        {/* --- BÌA SAU (Cố định) --- */}
+        <div className="book-cover back"></div>
+
+        {/* --- TRANG 3 --- */}
+        <div
+          className={`book-page page-3 ${pageNum >= 3 ? 'flipped' : ''}`}
+          style={{ zIndex: pageNum >= 3 ? 4 : 1 }}
+          onClick={pageNum >= 3 ? handlePrevPage : handleNextPage}
+        >
+          <div className="page-front">
+            <div className="page-content">
+              <h4>Chương 3: Kết nối</h4>
+              <img src="https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=300&q=80" alt="Connect" />
+              <p>Sách không chỉ là giấy mực, đó là cầu nối giữa những tâm hồn đồng điệu.</p>
+              <span className="page-number">3</span>
+            </div>
+          </div>
+          <div className="page-back"></div>
+        </div>
+
+        {/* --- TRANG 2 --- */}
+        <div
+          className={`book-page page-2 ${pageNum >= 2 ? 'flipped' : ''}`}
+          style={{ zIndex: pageNum >= 2 ? 5 : 2 }}
+          onClick={pageNum >= 2 ? handlePrevPage : handleNextPage}
+        >
+          <div className="page-front">
+            <div className="page-content">
+              <h4>Chương 2: Khám phá</h4>
+              <img src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=300&q=80" alt="Explore" />
+              <p>Mỗi trang sách mở ra một chân trời mới, đưa ta đến những miền đất lạ.</p>
+              <span className="page-number">2</span>
+            </div>
+          </div>
+          <div className="page-back"></div>
+        </div>
+
+        {/* --- TRANG 1 --- */}
+        <div
+          className={`book-page page-1 ${pageNum >= 1 ? 'flipped' : ''}`}
+          style={{ zIndex: pageNum >= 1 ? 6 : 3 }}
+          onClick={pageNum >= 1 ? handlePrevPage : handleNextPage}
+        >
+          <div className="page-front">
+            <div className="page-content">
+              <h4>Chương 1: Khởi đầu</h4>
+              <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=300&q=80" alt="Start" />
+              <p>Chào mừng bạn đến với AIMS. Nơi lưu giữ những giá trị văn hóa vượt thời gian.</p>
+              <span className="page-number">1</span>
+            </div>
+          </div>
+          <div className="page-back"></div>
+        </div>
+
+        {/* --- BÌA TRƯỚC (Front Cover) --- */}
+        <div
+          className={`book-cover front ${isOpen ? 'flipped' : ''}`}
+          style={{ zIndex: 10 }}
+        >
+          <div className="cover-face front-face">
+            <div className="cover-design">
+              <div className="cover-frame">
+                <span className="author">AIMS EDITION</span>
+                <h3 className="title">THE<br />AIMS</h3>
+                <div className="ornament">✻</div>
+                <span className="year">EST. 2025</span>
+              </div>
+            </div>
+            <div className="spine-left"></div>
+          </div>
+          <div className="cover-face back-face">
+            {/* Mặt trong của bìa trước */}
+            <div className="ex-libris">
+              <span>Thuộc về thư viện:</span>
+              <strong>AIMS Member</strong>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* --- Nút điều khiển bên ngoài --- */}
+      <div className="book-controls">
+        {!isOpen ? (
+          <span className="hint-text">Click vào sách để mở</span>
+        ) : (
+          <button className="close-btn" onClick={handleCloseBook}>
+            Đóng sách
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
 const themes = [
   {
     key: 'dvd',
@@ -116,16 +245,7 @@ const themes = [
       { value: '24h', label: 'Xác nhận đơn nhanh' },
     ],
     callouts: [
-      {
-        title: 'Xuất bản chính hãng',
-        text: 'Năm phát hành rõ ràng',
-        style: { top: '10%', right: '8%' },
-      },
-      {
-        title: 'Bảo quản kỹ',
-        text: 'Chống ẩm và trầy bìa',
-        style: { bottom: '20%', left: '6%' },
-      },
+
     ],
     featureTitle: 'Tập trung vào trải nghiệm đọc',
     featureCopy:
@@ -297,11 +417,7 @@ const LandingPage = () => {
                       aria-hidden="true"
                     >
                       {theme.key === 'book' ? (
-                        <div className="theme__book">
-                          <div className="theme__book-page theme__book-page--left"></div>
-                          <div className="theme__book-spine"></div>
-                          <div className="theme__book-page theme__book-page--right"></div>
-                        </div>
+                        <InteractiveBook />
                       ) : (
                         <div className={`theme__disc theme__disc--${theme.key}`}>
                           <span className="theme__disc-highlight" aria-hidden="true"></span>
