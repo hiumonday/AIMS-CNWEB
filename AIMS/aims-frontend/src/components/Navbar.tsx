@@ -1,15 +1,21 @@
-import type { FC } from 'react';
-import { Link } from 'react-router-dom';
+import type { FC, FormEvent } from 'react';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './Layout.css';
 import { useCart } from '../context/CartContext';
 
 const Navbar: FC = () => {
   const { totalItems } = useCart();
-  const isLoggedIn = !!localStorage.getItem("userId");
+  const navigate = useNavigate();
+  const [searchValue, setSearchValue] = useState('');
 
-  const handleLogout = () => {
-    localStorage.removeItem("userId");
-    window.location.href = "/login";
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const term = searchValue.trim();
+    if (!term) {
+      return;
+    }
+    navigate(`/products?query=${encodeURIComponent(term)}`);
   };
 
   return (
@@ -23,20 +29,23 @@ const Navbar: FC = () => {
         <Link to="/contact">Contact</Link>
       </div>
       <div className="nav__actions">
-        {isLoggedIn ? (
-          <button className="btn light" onClick={handleLogout}>
-            Log out
-          </button>
-        ) : (
-          <>
-            <Link className="btn light" to="/login">
-              Log in
-            </Link>
-            <Link className="btn primary" to="/register" style={{ marginLeft: '8px' }}>
-              Register
-            </Link>
-          </>
-        )}
+        <div className="nav__search">
+          <span className="nav__search-trigger">Search</span>
+          <form className="nav__search-panel" onSubmit={handleSearchSubmit}>
+            <label className="nav__search-field">
+              <span>Enter keyword</span>
+              <input
+                type="text"
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+                placeholder="Enter keyword"
+              />
+            </label>
+            <button className="nav__search-submit" type="submit" aria-label="Search">
+              →
+            </button>
+          </form>
+        </div>
         <Link className="nav__cart" to="/cart">
           <svg
             width="18"

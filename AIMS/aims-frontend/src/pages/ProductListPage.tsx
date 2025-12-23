@@ -22,42 +22,18 @@ const priceRanges = [
   { label: "> 500.000 VND", value: "500000+" },
 ];
 
-const sortKeyToParam = (key: SortKey) => {
-  if (key === "price-asc") return "priceAsc";
-  if (key === "price-desc") return "priceDesc";
-  return "title";
-};
-
-const priceBandToRange = (
-  band: string
-): { minPrice?: number; maxPrice?: number } => {
-  switch (band) {
-    case "0-200000":
-      return { minPrice: 0, maxPrice: 200000 };
-    case "200000-500000":
-      return { minPrice: 200000, maxPrice: 500000 };
-    case "500000+":
-      return { minPrice: 500000 };
-    default:
-      return {};
-  }
-};
-
-const formatVnd = (value?: number) => {
-  if (value === null || value === undefined) return undefined;
-  return `${value.toLocaleString("vi-VN")} VND`;
-};
-
 const ProductListPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const initialCategory =
     (searchParams.get("category") as Category | null) || "All";
+  const queryParam = searchParams.get("query") || "";
+  const initialQuery = queryParam;
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialQuery);
   const [category, setCategory] = useState<Category | "All">(initialCategory);
   const [sort, setSort] = useState<SortKey>("title");
   const [page, setPage] = useState(1);
@@ -71,6 +47,11 @@ const ProductListPage = () => {
     setCategory(initialCategory);
     setPage(1);
   }, [initialCategory]);
+
+  useEffect(() => {
+    setSearch(queryParam);
+    setPage(1);
+  }, [queryParam]);
 
   useEffect(() => {
     const { minPrice, maxPrice } = priceBandToRange(priceBand);
