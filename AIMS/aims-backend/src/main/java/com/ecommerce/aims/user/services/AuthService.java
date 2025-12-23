@@ -5,11 +5,16 @@ import com.ecommerce.aims.common.exception.NotFoundException;
 import com.ecommerce.aims.middleware.security.jwt.JwtService;
 import com.ecommerce.aims.user.dto.AuthResponse;
 import com.ecommerce.aims.user.dto.ChangePasswordRequest;
+import com.ecommerce.aims.user.dto.ForgotPasswordRequest;
 import com.ecommerce.aims.user.dto.LoginRequest;
+import com.ecommerce.aims.user.dto.ResetPasswordRequest;
 import com.ecommerce.aims.user.dto.UserResponse;
 import com.ecommerce.aims.user.models.User;
 import com.ecommerce.aims.user.models.UserPrincipal;
+import com.ecommerce.aims.user.repository.IUserRepository;
 import com.ecommerce.aims.user.repository.UserRepository;
+
+import com.ecommerce.aims.notification.services.EmailNotificationService;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -34,6 +39,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final EmailNotificationService emailNotificationService;
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
@@ -137,6 +143,60 @@ public class AuthService {
         // Consider shorter refresh token TTL or implement token blacklist if needed
 
         return toResponse(userRepository.save(user));
+    }
+
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
+        String email = request.getEmail();
+        
+        User user = userRepository.findByEmail(email).orElse(null);
+        
+        if (user == null) {
+            log.warn("Password reset requested for non-existent email: {}", email);
+            return;
+        }
+        
+        if (user.getStatus() == com.ecommerce.aims.user.models.UserStatus.LOCKED) {
+            log.warn("Password reset requested for locked user: {}", email);
+            return;
+        }
+        
+        String token = jwtService.generatePasswordResetToken(user.getEmail(), user.getId());
+
+        emailNotificationService.sendPasswordResetEmail(user.getEmail(), token);
+        
+        log.info("Password reset token generated for user: {}", email);
+    }
+    
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
+        
+        String token = request.getToken();
+        
+        if (!jwtService.isPasswordResetTokenValid(token)) {
+            throw new BusinessException("Invalid or expired reset token");
+        }
+        
+        String email = jwtService.extractUsername(token);
+        Long userId = jwtService.extractUserId(token);
+        
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new BusinessException("User not found"));
+        
+        if (!user.getEmail().equals(email)) {
+            throw new BusinessException("Token does not match user");
+        }
+        
+        if (user.getStatus() == com.ecommerce.aims.user.models.UserStatus.LOCKED) {
+            throw new BusinessException("User account is locked");
+        }
+        
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        
+        log.info("Password successfully reset for user: {}", user.getEmail());
     }
 
     private UserResponse toResponse(User user) {

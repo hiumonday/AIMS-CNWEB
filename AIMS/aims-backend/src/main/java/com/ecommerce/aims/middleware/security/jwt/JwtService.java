@@ -29,6 +29,9 @@ public class JwtService {
     @Value("${security.jwt.refresh-token-expiration:604800000}")
     private long refreshTokenExpirationMs;
 
+    @Value("${security.jwt.password-reset-expiration:86400000}")
+    private long passwordResetExpirationMs;
+
     @Value("${security.jwt.issuer:aims-backend}")
     private String issuer;
 
@@ -129,5 +132,37 @@ public class JwtService {
 
     public Instant getRefreshTokenExpiration() {
         return Instant.now().plusMillis(refreshTokenExpirationMs);
+    }
+
+    public String generatePasswordResetToken(String email, Long userId) {
+        Instant now = Instant.now();
+        Instant expiration = now.plusMillis(passwordResetExpirationMs);
+
+        return Jwts.builder()
+            .subject(email)
+            .claim("userId", userId)
+            .claim("type", "password-reset")
+            .issuer(issuer)
+            .issuedAt(Date.from(now))
+            .expiration(Date.from(expiration))
+            .signWith(getSigningKey())
+            .compact();
+    }
+
+    public boolean isPasswordResetToken(String token) {
+        try {
+            String type = extractClaim(token, claims -> claims.get("type", String.class));
+            return "password-reset".equals(type);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isPasswordResetTokenValid(String token) {
+        try {
+            return isPasswordResetToken(token) && !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

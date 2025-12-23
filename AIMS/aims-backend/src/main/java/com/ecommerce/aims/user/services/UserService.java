@@ -3,6 +3,8 @@ package com.ecommerce.aims.user.services;
 import com.ecommerce.aims.common.dto.PageResponse;
 import com.ecommerce.aims.common.exception.BusinessException;
 import com.ecommerce.aims.common.exception.NotFoundException;
+import com.ecommerce.aims.middleware.security.jwt.JwtService;
+import com.ecommerce.aims.notification.services.EmailNotificationService;
 import com.ecommerce.aims.user.dto.UserRequest;
 import com.ecommerce.aims.user.dto.UserResponse;
 import com.ecommerce.aims.user.models.Role;
@@ -39,6 +41,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final IRoleRepository IRoleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final EmailNotificationService emailNotificationService;
 
     @Transactional
     public UserResponse createUser(UserRequest request) {
@@ -54,7 +58,11 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setStatus(request.getStatus() != null ? request.getStatus() : UserStatus.ACTIVE);
         user.setRoles(resolveRoles(request.getRoles()));
-        return toResponse(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        
+        emailNotificationService.sendUserCreatedByAdminEmail(savedUser.getEmail(), request.getPassword());
+        
+        return toResponse(savedUser);
     }
 
     @Transactional
@@ -80,7 +88,11 @@ public class UserService {
         if (request.getRoles() != null && !request.getRoles().isEmpty()) {
             user.setRoles(resolveRoles(request.getRoles()));
         }
-        return toResponse(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        
+        emailNotificationService.sendUserUpdatedByAdminEmail(savedUser.getEmail());
+        
+        return toResponse(savedUser);
     }
 
     public UserResponse getUser(Long id) {
@@ -107,7 +119,11 @@ public class UserService {
         User user = userRepository.findById(requiredId)
             .orElseThrow(() -> new NotFoundException("User not found"));
         user.setStatus(UserStatus.LOCKED);
-        return toResponse(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        
+        emailNotificationService.sendUserLockedByAdminEmail(savedUser.getEmail());
+        
+        return toResponse(savedUser);
     }
 
     @Transactional
@@ -116,7 +132,59 @@ public class UserService {
         User user = userRepository.findById(requiredId)
             .orElseThrow(() -> new NotFoundException("User not found"));
         user.setStatus(UserStatus.ACTIVE);
-        return toResponse(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        
+        emailNotificationService.sendUserUnlockedByAdminEmail(savedUser.getEmail());
+        
+        return toResponse(savedUser);
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        Long requiredId = Objects.requireNonNull(id, "id must not be null");
+        User user = userRepository.findById(requiredId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+        String email = user.getEmail();
+        
+        userRepository.delete(user);
+        
+        emailNotificationService.sendUserDeletedByAdminEmail(email);
+    }
+
+    @Transactional
+    public void adminResetPassword(Long id) {
+        Long requiredId = Objects.requireNonNull(id, "id must not be null");
+        User user = userRepository.findById(requiredId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+        
+        if (user.getStatus() == UserStatus.LOCKED) {
+            throw new BusinessException("Cannot reset password for locked user");
+        }
+        
+        String token = jwtService.generatePasswordResetToken(user.getEmail(), user.getId());
+        
+        emailNotificationService.sendAdminPasswordResetEmail(user.getEmail(), token);
+    }
+
+    @Transactional
+    public UserResponse updateUserRoles(Long userId, Set<String> roleNames) {
+        Long requiredId = Objects.requireNonNull(userId, "userId must not be null");
+        Objects.requireNonNull(roleNames, "roleNames must not be null");
+        
+        if (roleNames.isEmpty()) {
+            throw new BusinessException("Role list cannot be empty");
+        }
+        
+        User user = userRepository.findById(requiredId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+        
+        Set<Role> newRoles = resolveRoles(roleNames);
+        
+        User updatedUser = userRepository.updateUserRoles(requiredId, newRoles);
+        
+        emailNotificationService.sendUserUpdatedByAdminEmail(updatedUser.getEmail());
+        
+        return toResponse(updatedUser);
     }
 
     private Set<Role> resolveRoles(Set<String> roleNames) {

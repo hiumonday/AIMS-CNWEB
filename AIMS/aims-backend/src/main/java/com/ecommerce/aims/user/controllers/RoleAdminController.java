@@ -34,6 +34,15 @@ public class RoleAdminController {
         );
     }
 
+    @PutMapping("/{id}")
+    public ApiResponse<RoleResponse> updateRoleById(@PathVariable Long id, 
+                                                     @Valid @RequestBody RoleRequest request) {
+        return ApiResponse.success(
+                RoleResponse.from(roleService.updateRoleById(id, request.getName())),
+                "Role updated"
+        );
+    }
+
     @PostMapping
     public ApiResponse<RoleResponse> createRole(@Valid @RequestBody RoleRequest request) {
         return ApiResponse.success(

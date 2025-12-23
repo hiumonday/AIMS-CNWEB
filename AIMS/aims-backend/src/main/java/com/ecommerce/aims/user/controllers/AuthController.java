@@ -3,7 +3,9 @@ package com.ecommerce.aims.user.controllers;
 import com.ecommerce.aims.common.dto.ApiResponse;
 import com.ecommerce.aims.user.dto.AuthResponse;
 import com.ecommerce.aims.user.dto.ChangePasswordRequest;
+import com.ecommerce.aims.user.dto.ForgotPasswordRequest;
 import com.ecommerce.aims.user.dto.LoginRequest;
+import com.ecommerce.aims.user.dto.ResetPasswordRequest;
 import com.ecommerce.aims.user.dto.UserRequest;
 import com.ecommerce.aims.user.dto.UserResponse;
 import com.ecommerce.aims.user.services.AuthService;
@@ -96,5 +98,17 @@ public class AuthController {
 
         setRefreshTokenCookie(response, authResponse.getRefreshToken());
         return ApiResponse.success(authResponse, "User registered and logged in");
+    }
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ApiResponse.success(null, "If the email exists, a password reset link has been sent");
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ApiResponse.success(null, "Password has been reset successfully");
     }
 }
