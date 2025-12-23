@@ -3,8 +3,10 @@ package com.ecommerce.aims.product.services;
 import com.ecommerce.aims.common.exception.BusinessException;
 import com.ecommerce.aims.common.exception.NotFoundException;
 import com.ecommerce.aims.common.util.MoneyUtils;
+import com.ecommerce.aims.product.dto.BulkDeleteResponse;
 import com.ecommerce.aims.product.dto.ProductRequest;
 import com.ecommerce.aims.product.dto.ProductResponse;
+import com.ecommerce.aims.product.dto.StockAdjustmentRequest;
 import com.ecommerce.aims.product.models.Product;
 import com.ecommerce.aims.product.models.ProductHistory;
 import com.ecommerce.aims.product.models.ProductStatus;
@@ -17,6 +19,7 @@ import com.ecommerce.aims.product.repository.TypeAttributeRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,13 +69,12 @@ public class ProductAdminService {
     public void deleteOrDeactivate(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
-        LocalDate today = LocalDate.now();
-        LocalDateTime start = today.atStartOfDay();
-        LocalDateTime end = today.plusDays(1).atStartOfDay();
-        long deletesToday = historyRepository.countByActionAndCreatedAtBetween("DELETE", start, end);
+        
+        long deletesToday = countDeletesToday();
         if (deletesToday >= 20) {
-            throw new BusinessException("Daily delete limit reached");
+            throw new BusinessException("Daily delete limit reached (20 products/day)");
         }
+        
         Integer stock = product.getStock();
         if (stock != null && stock > 0) {
             product.setStatus(ProductStatus.DEACTIVATED);
@@ -84,6 +86,118 @@ public class ProductAdminService {
         historyRepository.save(ProductHistory.builder().product(null).action("DELETE")
                 .note("Deleted product " + product.getId()).build());
         productRepository.delete(product);
+    }
+
+    @Transactional
+    public BulkDeleteResponse bulkDelete(List<Long> productIds) {
+        Objects.requireNonNull(productIds, "productIds must not be null");
+        
+        if (productIds.isEmpty()) {
+            throw new BusinessException("Product IDs list cannot be empty");
+        }
+        
+        if (productIds.size() > 10) {
+            throw new BusinessException("Cannot delete more than 10 products at once");
+        }
+        
+        long deletesToday = countDeletesToday();
+        long remainingQuota = 20 - deletesToday;
+        
+        if (remainingQuota <= 0) {
+            throw new BusinessException("Daily delete limit reached (20 products/day)");
+        }
+        
+        if (productIds.size() > remainingQuota) {
+            throw new BusinessException(
+                String.format("Cannot delete %d products. Daily quota remaining: %d", 
+                    productIds.size(), remainingQuota)
+            );
+        }
+        
+        List<Long> deletedIds = new ArrayList<>();
+        List<Long> deactivatedIds = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        
+        for (Long productId : productIds) {
+            try {
+                Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new NotFoundException("Product not found: " + productId));
+                
+                Integer stock = product.getStock();
+                if (stock != null && stock > 0) {
+                    product.setStatus(ProductStatus.DEACTIVATED);
+                    productRepository.save(product);
+                    historyRepository.save(ProductHistory.builder()
+                        .product(product)
+                        .action("DEACTIVATE")
+                        .note("Bulk operation: Stock remaining, deactivated")
+                        .build());
+                    deactivatedIds.add(productId);
+                } else {
+                    historyRepository.save(ProductHistory.builder()
+                        .product(null)
+                        .action("DELETE")
+                        .note("Bulk operation: Deleted product " + productId)
+                        .build());
+                    productRepository.delete(product);
+                    deletedIds.add(productId);
+                }
+            } catch (Exception e) {
+                errors.add("Product " + productId + ": " + e.getMessage());
+            }
+        }
+        
+        return BulkDeleteResponse.builder()
+            .deletedCount(deletedIds.size())
+            .deactivatedCount(deactivatedIds.size())
+            .deletedIds(deletedIds)
+            .deactivatedIds(deactivatedIds)
+            .errors(errors)
+            .build();
+    }
+
+    @Transactional
+    public ProductResponse adjustStock(Long id, StockAdjustmentRequest request) {
+        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(request, "request must not be null");
+        
+        Product product = productRepository.findById(id)
+            .orElseThrow(() -> new NotFoundException("Product not found"));
+        
+        Integer currentStock = product.getStock();
+        if (currentStock == null) {
+            currentStock = 0;
+        }
+        
+        Integer newStock = currentStock + request.getQuantityChange();
+        
+        if (newStock < 0) {
+            throw new BusinessException(
+                String.format("Invalid stock adjustment. Current: %d, Change: %d, Result: %d (cannot be negative)",
+                    currentStock, request.getQuantityChange(), newStock)
+            );
+        }
+        
+        product.setStock(newStock);
+        Product saved = productRepository.save(product);
+        
+        String note = String.format("Stock adjusted: %d → %d (change: %+d). Reason: %s",
+            currentStock, newStock, request.getQuantityChange(), request.getReason());
+        
+        historyRepository.save(ProductHistory.builder()
+            .product(saved)
+            .action("STOCK_ADJUSTMENT")
+            .note(note)
+            .build());
+        
+        return toResponse(saved);
+    }
+
+    private long countDeletesToday() {
+        LocalDate today = LocalDate.now();
+        LocalDateTime start = today.atStartOfDay();
+        LocalDateTime end = today.plusDays(1).atStartOfDay();
+        return historyRepository.countByActionAndCreatedAtBetween("DELETE", start, end);
     }
 
     private void applyRequest(Product product, ProductRequest request) {
