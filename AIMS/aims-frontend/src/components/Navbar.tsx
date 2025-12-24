@@ -1,13 +1,33 @@
 import type { FC, FormEvent } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Layout.css';
 import { useCart } from '../context/CartContext';
+
+type ThemeMode = 'light' | 'dark';
+
+const getInitialTheme = (): ThemeMode => {
+  if (typeof window === 'undefined') {
+    return 'light';
+  }
+
+  const stored = window.localStorage.getItem('aims-theme');
+  if (stored === 'light' || stored === 'dark') {
+    return stored;
+  }
+
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+
+  return 'light';
+};
 
 const Navbar: FC = () => {
   const { totalItems } = useCart();
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState('');
+  const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -18,10 +38,19 @@ const Navbar: FC = () => {
     navigate(`/products?query=${encodeURIComponent(term)}`);
   };
 
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem('aims-theme', theme);
+  }, [theme]);
+
+  const handleThemeToggle = () => {
+    setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
+  };
+
   return (
     <nav className="nav">
       <div className="nav__logo">
-        <Link to="/home">AIMS ATELIER</Link>
+        <Link to="/home">AIMS MEDIA</Link>
       </div>
       <div className="nav__links">
         <Link to="/home">Home</Link>
@@ -46,6 +75,15 @@ const Navbar: FC = () => {
             </button>
           </form>
         </div>
+        <button
+          className="nav__theme-toggle"
+          type="button"
+          onClick={handleThemeToggle}
+          aria-pressed={theme === 'dark'}
+          aria-label="Toggle light and dark mode"
+        >
+          {theme === 'dark' ? 'Dark' : 'Light'} Mode
+        </button>
         <Link className="nav__cart" to="/cart">
           <svg
             width="18"
