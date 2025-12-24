@@ -9,7 +9,10 @@ export const dvdTheme = {
   label: 'DVD Collection',
   searchKey: 'DVD',
   // Màu accent mới: Sunset Gold pha Red
-  accent: '#ff5e3a', 
+  accent: '#ff5e3a',
+  light: '#fff',
+  dark: '#0b0b0b',
+  word: '#222',
 };
 
 const dvdMetrics = [
@@ -43,14 +46,14 @@ const DvdSection: FC<LandingSectionProps> = ({ style, heroStyle, scrollHint }) =
             <span className="eyebrow-line"></span>
             AIMS MEDIA · {dvdTheme.label}
           </div>
-          
+
           <h1 className="cinematic-title">
             Cinema <br />
             <span className="text-highlight">At Home</span>
           </h1>
-          
+
           <p className="cinematic-desc">
-            Sắc màu rực rỡ, phụ đề chuẩn xác và soundtrack ấm áp. 
+            Sắc màu rực rỡ, phụ đề chuẩn xác và soundtrack ấm áp.
             Trải nghiệm rạp chiếu ngay tại phòng khách với bộ sưu tập DVD & Blu-ray chất lượng cao.
           </p>
 
@@ -70,7 +73,7 @@ const DvdSection: FC<LandingSectionProps> = ({ style, heroStyle, scrollHint }) =
             >
               <span>Khám phá ngay</span>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
+                <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </Link>
             <Link className="btn-magnetic secondary" to="/products">
@@ -81,40 +84,40 @@ const DvdSection: FC<LandingSectionProps> = ({ style, heroStyle, scrollHint }) =
 
         {/* Visual Layer - 3D Composition */}
         <div className="cinematic-visual">
-            {/* Background Decor Text */}
-            <div className="big-text-bg">DVD</div>
-            
-            <div className="disc-wrapper">
-                {/* Vỏ đĩa mờ phía sau */}
-                <div className="disc-case-blur"></div>
-                
-                {/* Đĩa 3D xoay */}
-                <div className="disc-3d-container">
-                    <div className="disc-3d">
-                        <div className="disc-texture"></div>
-                        <div className="disc-reflection"></div>
-                        <div className="disc-center">
-                            <div className="disc-hole"></div>
-                            <span className="brand">AIMS</span>
-                        </div>
-                    </div>
-                </div>
+          {/* Background Decor Text */}
+          <div className="big-text-bg">DVD</div>
 
-                {/* Floating Cards (Tech specs) */}
-                <div className="tech-card card-dolby">
-                    <div className="tech-icon"></div>
-                    <div className="tech-info">
-                        <strong>Dolby Vision</strong>
-                        <span>HDR Tối ưu</span>
-                    </div>
+          <div className="disc-wrapper">
+            {/* Vỏ đĩa mờ phía sau */}
+            <div className="disc-case-blur"></div>
+
+            {/* Đĩa 3D xoay */}
+            <div className="disc-3d-container">
+              <div className="disc-3d">
+                <div className="disc-texture"></div>
+                <div className="disc-reflection"></div>
+                <div className="disc-center">
+                  <div className="disc-hole"></div>
+                  <span className="brand">AIMS</span>
                 </div>
-                 <div className="tech-card card-bluray">
-                    <div className="tech-info">
-                        <strong>Blu-ray™</strong>
-                        <span>Official</span>
-                    </div>
-                </div>
+              </div>
             </div>
+
+            {/* Floating Cards (Tech specs) */}
+            <div className="tech-card card-dolby">
+              <div className="tech-icon"></div>
+              <div className="tech-info">
+                <strong>Dolby Vision</strong>
+                <span>HDR Tối ưu</span>
+              </div>
+            </div>
+            <div className="tech-card card-bluray">
+              <div className="tech-info">
+                <strong>Blu-ray™</strong>
+                <span>Official</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
