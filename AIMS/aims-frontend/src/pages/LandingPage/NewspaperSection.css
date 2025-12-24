@@ -1,0 +1,108 @@
+.theme--newspaper {
+  background: linear-gradient(120deg, #f6f1e8 0 70%, #e7f0fb 70% 100%);
+  color: #1c1b19;
+}
+
+.theme--newspaper::before {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(30, 30, 30, 0.08),
+    rgba(30, 30, 30, 0.08) 1px,
+    transparent 1px,
+    transparent 80px
+  );
+  opacity: 0.18;
+}
+
+.theme--newspaper::after {
+  border-color: rgba(30, 30, 30, 0.16);
+}
+
+.theme--newspaper .theme__hero {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 30px;
+}
+
+.theme--newspaper .theme__hero-left {
+  max-width: 520px;
+  border-left: 3px solid rgba(30, 127, 191, 0.5);
+  padding-left: 18px;
+}
+
+.theme--newspaper .theme__hero-right {
+  align-items: center;
+  min-height: 340px;
+}
+
+.theme--newspaper .theme__hero-word {
+  right: auto;
+  left: 6%;
+  top: -18px;
+  letter-spacing: 0.22em;
+}
+
+.theme__hero-figure--newspaper {
+  border-radius: 18px;
+}
+
+.theme--newspaper .theme__hero-figure {
+  width: min(420px, 90%);
+  aspect-ratio: 800 / 1041;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.theme--newspaper .theme__badge {
+  background: rgba(30, 127, 191, 0.15);
+  border: 1px solid rgba(30, 127, 191, 0.4);
+  color: #1c2f46;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 10px;
+}
+
+.theme--newspaper .theme__metric {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(120, 120, 120, 0.2);
+}
+
+.theme--newspaper .theme__callout {
+  background: rgba(255, 255, 255, 0.95);
+  color: #1d1d1d;
+  border-color: rgba(30, 127, 191, 0.35);
+}
+
+.theme--newspaper .theme__content {
+  background: #fffdf7;
+  border: 1px solid rgba(30, 127, 191, 0.2);
+  box-shadow: 0 20px 40px rgba(30, 30, 30, 0.1);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  padding: 18px;
+  gap: 14px;
+}
+
+.theme--newspaper .theme__content-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.theme--newspaper .theme__feature-card {
+  background: #ffffff;
+  border: 1px solid rgba(30, 127, 191, 0.18);
+  border-radius: 10px;
+  min-height: 150px;
+}
+
+.theme--newspaper .theme__feature-media {
+  height: 72px;
+  filter: grayscale(20%);
+}
+
+.theme--newspaper .theme__feature-body h3 {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+}

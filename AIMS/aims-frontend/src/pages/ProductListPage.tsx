@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { listProducts } from "../services/productService";
+import type { ListParams } from "../services/productService";
 import type { Category, Product } from "../types";
 import "./ProductListPage.css";
 
 type SortKey = "title" | "price-asc" | "price-desc";
+type PriceRange = NonNullable<ListParams["priceRange"]>;
+type PriceBand = "all" | PriceRange;
 
 const itemsPerPage = 12;
 
@@ -17,14 +20,14 @@ const categories: Array<Category | "All"> = [
   "DVD",
 ];
 
-const priceRanges = [
+const priceRanges: Array<{ label: string; value: PriceBand }> = [
   { label: "All Prices", value: "all" },
   { label: "Under 200k", value: "0-200000" },
   { label: "200k - 500k", value: "200000-500000" },
   { label: "Over 500k", value: "500000+" },
 ];
 
-function priceBandToRange(band: string): { minPrice?: number; maxPrice?: number } {
+function priceBandToRange(band: PriceBand): { minPrice?: number; maxPrice?: number } {
   if (!band || band === "all") return { minPrice: undefined, maxPrice: undefined };
   if (band.includes("-")) {
     const [a, b] = band.split("-");
@@ -68,7 +71,7 @@ const ProductListPage = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(itemsPerPage);
-  const [priceBand, setPriceBand] = useState<string>("all");
+  const [priceBand, setPriceBand] = useState<PriceBand>("all");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const { addItem } = useCart();
 
@@ -84,6 +87,8 @@ const ProductListPage = () => {
 
   useEffect(() => {
     const { minPrice, maxPrice } = priceBandToRange(priceBand);
+    const priceRange: ListParams["priceRange"] =
+      priceBand === "all" ? undefined : priceBand;
     setLoading(true);
     setError(null);
 
@@ -92,6 +97,7 @@ const ProductListPage = () => {
       limit: pageSize,
       query: search.trim() || undefined,
       category,
+      priceRange,
       minPrice,
       maxPrice,
       sort: sortKeyToParam(sort),
@@ -160,7 +166,13 @@ const ProductListPage = () => {
                 ))}
               </select>
 
-              <select value={priceBand} onChange={(e) => { setPriceBand(e.target.value); setPage(1); }}>
+          <select
+            value={priceBand}
+            onChange={(e) => {
+              setPriceBand(e.target.value as PriceBand);
+              setPage(1);
+            }}
+          >
                 {priceRanges.map((range) => (
                   <option key={range.value} value={range.value}>{range.label}</option>
                 ))}
