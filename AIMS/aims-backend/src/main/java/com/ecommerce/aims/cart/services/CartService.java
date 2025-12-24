@@ -7,15 +7,18 @@ import com.ecommerce.aims.cart.models.Cart;
 import com.ecommerce.aims.cart.models.CartItem;
 import com.ecommerce.aims.cart.repository.CartRepository;
 import com.ecommerce.aims.common.exception.BusinessException;
-import com.ecommerce.aims.common.exception.NotFoundException;
+
 import com.ecommerce.aims.common.util.MoneyUtils;
-import com.ecommerce.aims.product.models.Product;
+import com.ecommerce.aims.product.dto.ProductResponse;
 import com.ecommerce.aims.product.models.ProductStatus;
-import com.ecommerce.aims.product.repository.ProductRepository;
+import com.ecommerce.aims.product.services.ProductService;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,7 +30,7 @@ import org.springframework.lang.Nullable;
 public class CartService {
 
     private final CartRepository cartRepository;
-    private final ProductRepository productRepository;
+    private final ProductService productService;
 
     public CartResponse getCart(String sessionKey) {
         Cart cart = resolveCart(sessionKey);
@@ -40,15 +43,15 @@ public class CartService {
         Long productId = Objects.requireNonNull(request.getProductId(), "productId must not be null");
         Integer quantity = Objects.requireNonNull(request.getQuantity(), "quantity must not be null");
         Cart cart = resolveCart(sessionKey);
-        Product product = productRepository.findById(productId)
-            .orElseThrow(() -> new NotFoundException("Product not found"));
+        ProductResponse product = productService.getProduct(productId);
+
         if (product.getStatus() == ProductStatus.DEACTIVATED) {
             throw new BusinessException("Product is not available");
         }
-        ensureStockAvailable(product, quantity);
+        ensureStockAvailable(product.getStock(), quantity);
         Optional<CartItem> existing = cart.getItems().stream()
-            .filter(item -> item.getProductId().equals(productId))
-            .findFirst();
+                .filter(item -> item.getProductId().equals(productId))
+                .findFirst();
         CartItem item = existing.orElseGet(() -> {
             CartItem created = new CartItem();
             created.setCart(cart);
@@ -72,24 +75,24 @@ public class CartService {
         Objects.requireNonNull(request, "request must not be null");
         Long productId = Objects.requireNonNull(request.getProductId(), "productId must not be null");
         Cart cart = resolveCart(sessionKey);
-        Product product = productRepository.findById(productId)
-            .orElseThrow(() -> new NotFoundException("Product not found"));
+        ProductResponse product = productService.getProduct(productId);
+
         cart.getItems().stream()
-            .filter(item -> item.getProductId().equals(productId))
-            .findFirst()
-            .ifPresent(item -> {
-                if (request.getQuantity() != null) {
-                    ensureStockAvailable(product, request.getQuantity());
-                    item.setQuantity(request.getQuantity());
-                }
-                BigDecimal price = Optional.ofNullable(request.getPrice()).orElse(product.getCurrentPrice());
-                if (price != null) {
-                    item.setPrice(price);
-                }
-                if (item.getPrice() != null && item.getQuantity() != null) {
-                    item.setTotalPrice(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
-                }
-            });
+                .filter(item -> item.getProductId().equals(productId))
+                .findFirst()
+                .ifPresent(item -> {
+                    if (request.getQuantity() != null) {
+                        ensureStockAvailable(product.getStock(), request.getQuantity());
+                        item.setQuantity(request.getQuantity());
+                    }
+                    BigDecimal price = Optional.ofNullable(request.getPrice()).orElse(product.getCurrentPrice());
+                    if (price != null) {
+                        item.setPrice(price);
+                    }
+                    if (item.getPrice() != null && item.getQuantity() != null) {
+                        item.setTotalPrice(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+                    }
+                });
         cartRepository.save(cart);
         return toResponse(cart);
     }
@@ -103,10 +106,10 @@ public class CartService {
         return toResponse(cart);
     }
 
-    private void ensureStockAvailable(Product product, int requestedQuantity) {
-        Integer stock = Optional.ofNullable(product.getStock()).orElse(0);
-        if (requestedQuantity > stock) {
-            int shortage = requestedQuantity - stock;
+    private void ensureStockAvailable(Integer stock, int requestedQuantity) {
+        Integer available = Optional.ofNullable(stock).orElse(0);
+        if (requestedQuantity > available) {
+            int shortage = requestedQuantity - available;
             throw new BusinessException("Insufficient stock. Shortage: " + shortage);
         }
     }
@@ -114,28 +117,51 @@ public class CartService {
     private Cart resolveCart(@Nullable String sessionKey) {
         String key = sessionKey != null ? sessionKey : UUID.randomUUID().toString();
         return cartRepository.findBySessionKey(key)
-            .orElseGet(() -> cartRepository.save(Cart.builder().sessionKey(key).build()));
+                .orElseGet(() -> cartRepository.save(Cart.builder().sessionKey(key).build()));
     }
 
     private CartResponse toResponse(Cart cart) {
         Cart nonNullCart = Objects.requireNonNull(cart, "cart must not be null");
+
+        List<Long> productIds = nonNullCart.getItems().stream()
+                .map(CartItem::getProductId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        Map<Long, ProductResponse> productMap = productService.getProducts(productIds).stream()
+                .collect(Collectors.toMap(ProductResponse::getId, Function.identity()));
+
+        List<CartResponse.CartLine> cartLines = nonNullCart.getItems().stream()
+                .map(item -> {
+                    ProductResponse product = productMap.get(item.getProductId());
+                    String productName = product != null ? product.getTitle() : "Unknown Product";
+                    // Assuming imageUrl is stored in attributes map
+                    String imageUrl = null;
+                    if (product != null && product.getAttributes() != null) {
+                        imageUrl = (String) product.getAttributes().get("imageUrl");
+                    }
+
+                    return CartResponse.CartLine.builder()
+                            .productId(item.getProductId())
+                            .productName(productName)
+                            .imageUrl(imageUrl)
+                            .quantity(item.getQuantity())
+                            .price(item.getPrice())
+                            .totalPrice(item.getTotalPrice())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
         BigDecimal total = nonNullCart.getItems().stream()
-            .map(item -> Optional.ofNullable(item.getTotalPrice()).orElse(BigDecimal.ZERO))
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(item -> Optional.ofNullable(item.getTotalPrice()).orElse(BigDecimal.ZERO))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalWithVat = MoneyUtils.applyVat(total);
         return CartResponse.builder()
-            .cartId(nonNullCart.getId())
-            .sessionKey(nonNullCart.getSessionKey())
-            .items(nonNullCart.getItems().stream()
-                .map(item -> CartResponse.CartLine.builder()
-                    .productId(item.getProductId())
-                    .quantity(item.getQuantity())
-                    .price(item.getPrice())
-                    .totalPrice(item.getTotalPrice())
-                    .build())
-                .collect(Collectors.toList()))
-            .totalBeforeVat(total)
-            .totalWithVat(totalWithVat)
-            .build();
+                .cartId(nonNullCart.getId())
+                .sessionKey(nonNullCart.getSessionKey())
+                .items(cartLines)
+                .totalBeforeVat(total)
+                .totalWithVat(totalWithVat)
+                .build();
     }
 }

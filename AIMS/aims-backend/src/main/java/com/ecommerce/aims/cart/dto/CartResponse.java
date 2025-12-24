@@ -18,6 +18,8 @@ public class CartResponse {
     @Builder
     public static class CartLine {
         private Long productId;
+        private String productName;
+        private String imageUrl;
         private Integer quantity;
         private BigDecimal price;
         private BigDecimal totalPrice;

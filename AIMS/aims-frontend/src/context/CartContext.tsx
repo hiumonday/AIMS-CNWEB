@@ -7,19 +7,15 @@ import {
   type FC,
   type ReactNode,
 } from "react";
-import type { Product } from "../types";
-import cartService from "../services/cartService";
-import { getProductById } from "../services/productService";
-
-export type CartItem = { productId: string; qty: number };
+import cartService, { type CartLine } from "../services/cartService";
 
 type CartContextValue = {
-  items: CartItem[];
+  items: CartLine[];
   addItem: (productId: string, qty?: number) => Promise<void>;
   updateQty: (productId: string, qty: number) => Promise<void>;
   removeItem: (productId: string) => Promise<void>;
   clear: () => void;
-  lines: Array<CartItem & { product: Product }>;
+  lines: CartLine[];
   subtotal: number;
   totalItems: number;
   isLoading: boolean;
@@ -29,48 +25,23 @@ type CartContextValue = {
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartLine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [cartProducts, setCartProducts] = useState<Record<string, Product>>({});
+  const [cartSubtotal, setCartSubtotal] = useState(0);
+  
   const sessionKey = cartService.getSessionKey();
 
   const refreshCart = async () => {
     setIsLoading(true);
-    console.log("refreshCart called with sessionKey:", sessionKey);
     try {
       const cart = await cartService.getCart(sessionKey);
-      console.log("cartService.getCart response:", cart);
-      if (cart.items && cart.items.length > 0) {
-        setItems(
-          cart.items.map((item) => ({
-            productId: String(item.productId),
-            qty: item.quantity,
-          }))
-        );
-
-        // Identify missing products
-        const missingIds = cart.items
-          .map((item) => String(item.productId))
-          .filter((id) => !cartProducts[id]);
-
-        console.log("Missing product IDs:", missingIds);
-
-        // Fetch missing products
-        if (missingIds.length > 0) {
-          const newProducts: Record<string, Product> = {};
-          await Promise.all(
-            missingIds.map(async (id) => {
-              const product = await getProductById(id);
-              if (product) {
-                newProducts[id] = product;
-              }
-            })
-          );
-          setCartProducts((prev) => ({ ...prev, ...newProducts }));
-        }
+      if (cart && cart.items) {
+        setItems(cart.items);
+        // Use totalBeforeVat from response as subtotal, or sum items
+        setCartSubtotal(cart.totalBeforeVat || 0);
       } else {
-        console.log("Cart is empty or has no items");
         setItems([]);
+        setCartSubtotal(0);
       }
     } catch (err) {
       console.error("Failed to refresh cart:", err);
@@ -86,137 +57,70 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const addItem = async (productId: string, qty = 1) => {
     try {
-      // Get product details for price
-      let product: Product | null = cartProducts[productId] ?? null;
-      if (!product) {
-        const fetched = await getProductById(productId);
-        if (!fetched) return;
-        product = fetched;
-        setCartProducts((prev) => ({ ...prev, [productId]: fetched }));
-      }
-
-      // Call backend
       const updatedCart = await cartService.addItem(sessionKey, {
         productId: Number(productId),
         quantity: qty,
-        price: product.price,
       });
 
-      console.log("addItem response:", updatedCart);
-
       if (updatedCart.items) {
-        setItems(
-          updatedCart.items.map((item) => ({
-            productId: String(item.productId),
-            qty: item.quantity,
-          }))
-        );
+        setItems(updatedCart.items);
+        setCartSubtotal(updatedCart.totalBeforeVat || 0);
       }
     } catch (err) {
       console.error("Failed to add item to cart:", err);
-      // Fallback to local-only update
-      setItems((prev) => {
-        const existing = prev.find((i) => i.productId === productId);
-        if (existing) {
-          return prev.map((i) =>
-            i.productId === productId ? { ...i, qty: i.qty + qty } : i
-          );
-        }
-        return [...prev, { productId, qty }];
-      });
+      // Optimistic update could go here, but with complex response, safer to just rely on server or simple retry
     }
   };
 
   const updateQty = async (productId: string, qty: number) => {
     if (qty <= 0) {
-      // If quantity is 0 or less, remove the item
       return removeItem(productId);
     }
 
     try {
-      let product: Product | null = cartProducts[productId] ?? null;
-      if (!product) {
-        const fetched = await getProductById(productId);
-        if (!fetched) return;
-        product = fetched;
-        setCartProducts((prev) => ({ ...prev, [productId]: fetched }));
-      }
-
-      const maxQty = product.stock;
-      const finalQty = Math.max(0, Math.min(maxQty, qty));
-
-      // Call backend
       const updatedCart = await cartService.updateItem(sessionKey, {
         productId: Number(productId),
-        quantity: finalQty,
-        price: product.price,
+        quantity: qty,
       });
 
-      console.log("updateQty response:", updatedCart);
-
       if (updatedCart.items) {
-        setItems(
-          updatedCart.items.map((item) => ({
-            productId: String(item.productId),
-            qty: item.quantity,
-          }))
-        );
+        setItems(updatedCart.items);
+        setCartSubtotal(updatedCart.totalBeforeVat || 0);
       }
     } catch (err) {
       console.error("Failed to update cart item:", err);
-      // Fallback to local-only update
-      setItems((prev) =>
-        prev
-          .map((i) => {
-            if (i.productId !== productId) return i;
-            const product = cartProducts[productId];
-            const maxQty = product ? product.stock : qty;
-            return { ...i, qty: Math.max(0, Math.min(maxQty, qty)) };
-          })
-          .filter((i) => i.qty > 0)
-      );
     }
   };
 
   const removeItem = async (productId: string) => {
     try {
-      // Find cart item ID (for now, use productId as cartItemId)
-      // Note: You may need to store cart item IDs separately if backend provides them
       const cartItemId = Number(productId);
       await cartService.removeItem(sessionKey, cartItemId);
-
-      // Update local state
-      setItems((prev) => prev.filter((i) => i.productId !== productId));
+      // For remove, we might need to refresh or just filter locally if we don't get full cart back
+      // cartService.removeItem returns void in current def.
+      // We should probably refresh cart or filter locally to update UI immediately
+      setItems((prev) => prev.filter((i) => i.productId !== Number(productId)));
+      // Note: Subtotal won't update accurately with local filter unless we calc it. 
+      // Ideally API returns updated cart on delete too, but service says void.
+      // Let's re-fetch or calc locally.
+      refreshCart(); 
     } catch (err) {
       console.error("Failed to remove cart item:", err);
-      // Fallback to local-only update
-      setItems((prev) => prev.filter((i) => i.productId !== productId));
     }
   };
 
   const clear = () => {
     setItems([]);
+    setCartSubtotal(0);
     cartService.clearSessionKey();
   };
 
-  const lines = useMemo(
-    () =>
-      items
-        .map((item) => {
-          const product = cartProducts[item.productId];
-          return product ? { ...item, product } : null;
-        })
-        .filter((x): x is CartItem & { product: Product } => Boolean(x)),
-    [items, cartProducts]
-  );
+  // lines is just items now, ensuring compatibility 
+  const lines = items;
 
-  const subtotal = useMemo(
-    () => lines.reduce((acc, line) => acc + line.product.price * line.qty, 0),
-    [lines]
-  );
   const totalItems = useMemo(
-    () => lines.reduce((acc, line) => acc + line.qty, 0),
-    [lines]
+    () => items.reduce((acc, line) => acc + line.quantity, 0),
+    [items]
   );
 
   const value: CartContextValue = {
@@ -226,7 +130,7 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
     removeItem,
     clear,
     lines,
-    subtotal,
+    subtotal: cartSubtotal,
     totalItems,
     isLoading,
     refreshCart,

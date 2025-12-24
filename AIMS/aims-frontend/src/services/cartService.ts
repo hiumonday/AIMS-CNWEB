@@ -3,32 +3,31 @@ import { apiClient } from "./api";
 /**
  * Cart-related types
  */
-export interface CartItem {
-  id?: number;
+export interface CartLine {
   productId: number;
-  productTitle?: string;
+  productName: string;
+  imageUrl: string;
   quantity: number;
   price: number;
+  totalPrice: number;
 }
 
 export interface Cart {
-  id?: number;
+  cartId: number;
   sessionKey: string;
-  items: CartItem[];
-  subtotal?: number;
-  totalItems?: number;
+  items: CartLine[];
+  totalBeforeVat: number;
+  totalWithVat: number;
 }
 
 export interface AddItemRequest {
   productId: number;
   quantity: number;
-  price: number;
 }
 
 export interface UpdateItemRequest {
   productId: number;
   quantity: number;
-  price: number;
 }
 
 interface ApiResponse<T> {
@@ -73,9 +72,13 @@ export async function addItem(
   sessionKey: string,
   item: AddItemRequest
 ): Promise<Cart> {
-  const response = await apiClient.post<ApiResponse<Cart>>("/cart/items", item, {
-    params: { sessionKey },
-  });
+  const response = await apiClient.post<ApiResponse<Cart>>(
+    "/cart/items",
+    item,
+    {
+      params: { sessionKey },
+    }
+  );
   return response.data.data;
 }
 
@@ -98,9 +101,13 @@ export async function updateItem(
   sessionKey: string,
   item: UpdateItemRequest
 ): Promise<Cart> {
-  const response = await apiClient.patch<ApiResponse<Cart>>("/cart/items", item, {
-    params: { sessionKey },
-  });
+  const response = await apiClient.patch<ApiResponse<Cart>>(
+    "/cart/items",
+    item,
+    {
+      params: { sessionKey },
+    }
+  );
   return response.data.data;
 }
 

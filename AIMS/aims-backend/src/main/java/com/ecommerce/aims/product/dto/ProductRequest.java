@@ -16,6 +16,7 @@ public class ProductRequest {
     private ProductStatus status;
     @NotBlank
     private String barcode;
+    private String imageUrl;
     @NotBlank
     private String title;
     @NotBlank

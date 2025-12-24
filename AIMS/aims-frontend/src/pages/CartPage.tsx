@@ -1,14 +1,9 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './CartPage.css';
 import { useCart } from '../context/CartContext';
 
 const CartPage = () => {
-  const { lines, updateQty, removeItem, subtotal, totalItems, refreshCart } = useCart();
-
-  useEffect(() => {
-    refreshCart();
-  }, []);
+  const { lines, updateQty, removeItem, subtotal, totalItems } = useCart();
 
   return (
     <main className="cart-shell">
@@ -39,33 +34,28 @@ const CartPage = () => {
           {lines.map(line => (
             <article key={line.productId} className="cart-card">
               <div className="cart-item">
-                <img src={line.product.image} alt={line.product.title} />
+                <img src={line.imageUrl} alt={line.productName} />
                 <div className="cart-info">
                   <h3>
-                    <Link to={`/product/${line.product.id}`}>{line.product.title}</Link>
+                    <Link to={`/product/${line.productId}`}>{line.productName}</Link>
                   </h3>
-                  <p>{line.product.genre}</p>
-                  <p className="muted">Stock: {line.product.stock}</p>
-                  {line.qty >= line.product.stock && (
-                    <p className="warning">Only {line.product.stock} items available for this product.</p>
-                  )}
                 </div>
               </div>
               <div className="cart-actions">
                 <div className="qty-control">
-                  <button type="button" onClick={() => updateQty(line.productId, line.qty - 1)}>
+                  <button type="button" onClick={() => updateQty(String(line.productId), line.quantity - 1)}>
                     -
                   </button>
-                  <span>{line.qty}</span>
-                  <button type="button" onClick={() => updateQty(line.productId, line.qty + 1)}>
+                  <span>{line.quantity}</span>
+                  <button type="button" onClick={() => updateQty(String(line.productId), line.quantity + 1)}>
                     +
                   </button>
                 </div>
                 <div className="cart-price">
-                  <span className="muted">${line.product.price.toFixed(2)} each</span>
-                  <span className="price">${(line.product.price * line.qty).toFixed(2)}</span>
+                  <span className="muted">${line.price.toFixed(2)} each</span>
+                  <span className="price">${line.totalPrice.toFixed(2)}</span>
                 </div>
-                <button className="trash" type="button" aria-label="Remove" onClick={() => removeItem(line.productId)}>
+                <button className="trash" type="button" aria-label="Remove" onClick={() => removeItem(String(line.productId))}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                     <polyline points="3 6 5 6 21 6" />
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />

@@ -35,6 +35,8 @@ public class Product {
     @Builder.Default
     private ProductStatus status = ProductStatus.ACTIVE;
 
+    private String imageUrl;
+
     @Column(nullable = false, unique = true)
     private String barcode;
     @Column(nullable = false)

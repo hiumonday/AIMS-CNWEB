@@ -1,15 +1,15 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
-        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd"
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd"
 >
-    <include file="db/changelog/init-changelog.xml"/>
-    <include file="db/changelog/update-order-table-changelog.xml"/>
-    <include file="db/changelog/migrate-product-changelog.xml"/>
-    <include file="db/changelog/seed-product-data-changelog.xml"/>
-    <include file="db/changelog/auth-changelog.xml"/>
-    <include file="db/changelog/drop-pbac.xml"/>
-    <include file="db/changelog/db.changelog-master.yaml"/>
-
+    <include file="db/changelog/init-changelog.xml" />
+    <include file="db/changelog/update-order-table-changelog.xml" />
+    <include file="db/changelog/migrate-product-changelog.xml" />
+    <include file="db/changelog/seed-product-data-changelog.xml" />
+    <include file="db/changelog/auth-changelog.xml" />
+    <include file="db/changelog/drop-pbac.xml" />
+    <include file="db/changelog/db.changelog-master.yaml" />
+    <include file="db/changelog/add-image-changelog.xml" />
 </databaseChangeLog>

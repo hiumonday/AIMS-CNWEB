@@ -216,6 +216,7 @@ public class ProductAdminService {
         validateRequiredAttributes(productType, attributes);
         product.setProductType(productType);
         product.setStatus(request.getStatus() != null ? request.getStatus() : ProductStatus.ACTIVE);
+        product.setImageUrl(request.getImageUrl());
         product.setBarcode(request.getBarcode());
         product.setTitle(request.getTitle());
         product.setCategory(request.getCategory());
@@ -230,10 +231,10 @@ public class ProductAdminService {
         product.setCurrentPrice(request.getCurrentPrice());
         product.setStock(request.getStock());
         product.setAttributes(attributes);
-//        product.setBookDetail(request.getBookDetail());
-//        product.setNewspaperDetail(request.getNewspaperDetail());
-//        product.setCdDetail(request.getCdDetail());
-//        product.setDvdDetail(request.getDvdDetail());
+        // product.setBookDetail(request.getBookDetail());
+        // product.setNewspaperDetail(request.getNewspaperDetail());
+        // product.setCdDetail(request.getCdDetail());
+        // product.setDvdDetail(request.getDvdDetail());
     }
 
     private void validateRequest(ProductRequest request) {
@@ -250,19 +251,20 @@ public class ProductAdminService {
         if (request.getStock() != null && request.getStock() < 0) {
             throw new BusinessException("Stock cannot be negative");
         }
-//        ProductType type = request.getProductType();
-//        if (type == ProductType.BOOK && request.getBookDetail() == null) {
-//            throw new BusinessException("Book details are required for BOOK type");
-//        }
-//        if (type == ProductType.NEWSPAPER && request.getNewspaperDetail() == null) {
-//            throw new BusinessException("Newspaper details are required for NEWSPAPER type");
-//        }
-//        if (type == ProductType.CD && request.getCdDetail() == null) {
-//            throw new BusinessException("CD details are required for CD type");
-//        }
-//        if (type == ProductType.DVD && request.getDvdDetail() == null) {
-//            throw new BusinessException("DVD details are required for DVD type");
-//        }
+        // ProductType type = request.getProductType();
+        // if (type == ProductType.BOOK && request.getBookDetail() == null) {
+        // throw new BusinessException("Book details are required for BOOK type");
+        // }
+        // if (type == ProductType.NEWSPAPER && request.getNewspaperDetail() == null) {
+        // throw new BusinessException("Newspaper details are required for NEWSPAPER
+        // type");
+        // }
+        // if (type == ProductType.CD && request.getCdDetail() == null) {
+        // throw new BusinessException("CD details are required for CD type");
+        // }
+        // if (type == ProductType.DVD && request.getDvdDetail() == null) {
+        // throw new BusinessException("DVD details are required for DVD type");
+        // }
     }
 
     private ProductType resolveProductType(String typeCode) {
@@ -270,7 +272,7 @@ public class ProductAdminService {
             throw new BusinessException("Product type code is required");
         }
         return productTypeRepository.findByCodeIgnoreCase(typeCode.trim())
-            .orElseThrow(() -> new NotFoundException("Product type not found"));
+                .orElseThrow(() -> new NotFoundException("Product type not found"));
     }
 
     private void validateRequiredAttributes(ProductType productType, Map<String, Object> attributes) {
@@ -282,9 +284,9 @@ public class ProductAdminService {
             throw new BusinessException("Attributes are required for product type " + productType.getCode());
         }
         List<String> missing = requiredAttributes.stream()
-            .map(TypeAttribute::getKey)
-            .filter(key -> !attributes.containsKey(key) || isBlankValue(attributes.get(key)))
-            .toList();
+                .map(TypeAttribute::getKey)
+                .filter(key -> !attributes.containsKey(key) || isBlankValue(attributes.get(key)))
+                .toList();
         if (!missing.isEmpty()) {
             throw new BusinessException("Missing required attributes: " + String.join(", ", missing));
         }
@@ -306,6 +308,7 @@ public class ProductAdminService {
                 .id(product.getId())
                 .typeCode(product.getProductType() != null ? product.getProductType().getCode() : null)
                 .status(product.getStatus())
+                .imageUrl(product.getImageUrl())
                 .barcode(product.getBarcode())
                 .title(product.getTitle())
                 .category(product.getCategory())
@@ -320,10 +323,10 @@ public class ProductAdminService {
                 .currentPrice(product.getCurrentPrice())
                 .stock(product.getStock())
                 .attributes(product.getAttributes())
-//                .bookDetail(product.getBookDetail())
-//                .newspaperDetail(product.getNewspaperDetail())
-//                .cdDetail(product.getCdDetail())
-//                .dvdDetail(product.getDvdDetail())
+                // .bookDetail(product.getBookDetail())
+                // .newspaperDetail(product.getNewspaperDetail())
+                // .cdDetail(product.getCdDetail())
+                // .dvdDetail(product.getDvdDetail())
                 .build();
     }
 }

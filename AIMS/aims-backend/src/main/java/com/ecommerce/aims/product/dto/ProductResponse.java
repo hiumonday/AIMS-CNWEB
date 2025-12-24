@@ -13,6 +13,7 @@ public class ProductResponse {
     private Long id;
     private String typeCode;
     private ProductStatus status;
+    private String imageUrl;
     private String barcode;
     private String title;
     private String category;

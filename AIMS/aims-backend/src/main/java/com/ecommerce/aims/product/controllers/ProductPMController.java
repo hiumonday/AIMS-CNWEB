@@ -2,6 +2,7 @@ package com.ecommerce.aims.product.controllers;
 
 import com.ecommerce.aims.common.dto.ApiResponse;
 import com.ecommerce.aims.common.dto.PageResponse;
+import com.ecommerce.aims.media.CloudinaryService;
 import com.ecommerce.aims.product.dto.BulkDeleteRequest;
 import com.ecommerce.aims.product.dto.BulkDeleteResponse;
 import com.ecommerce.aims.product.dto.ProductFilterRequest;
@@ -19,7 +20,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/pm/products")
@@ -28,10 +31,29 @@ public class ProductPMController {
 
     private final ProductAdminService productAdminService;
     private final ProductService productService;
+    private final CloudinaryService cloudinaryService;
 
-    @PostMapping
-    public ApiResponse<ProductResponse> create(@Valid @RequestBody ProductRequest request) {
+    @PostMapping(consumes = { "multipart/form-data" })
+    public ApiResponse<ProductResponse> create(
+            @Valid @RequestPart("product") ProductRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = cloudinaryService.uploadImage(image);
+            request.setImageUrl(imageUrl);
+        }
         return ApiResponse.success(productAdminService.create(request), "Product created");
+    }
+
+    @PutMapping(value = "/{id}", consumes = { "multipart/form-data" })
+    public ApiResponse<ProductResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestPart("product") ProductRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = cloudinaryService.uploadImage(image);
+            request.setImageUrl(imageUrl);
+        }
+        return ApiResponse.success(productAdminService.update(id, request), "Product updated");
     }
 
     @GetMapping
@@ -44,11 +66,6 @@ public class ProductPMController {
         return ApiResponse.success(productService.getProduct(productId), "Product detail");
     }
 
-    @PutMapping("/{productId}")
-    public ApiResponse<ProductResponse> update(@PathVariable Long productId, @Valid @RequestBody ProductRequest request) {
-        return ApiResponse.success(productAdminService.update(productId, request), "Product updated");
-    }
-
     @DeleteMapping("/{productId}")
     public ApiResponse<Void> delete(@PathVariable Long productId) {
         productAdminService.deleteOrDeactivate(productId);
@@ -58,19 +75,16 @@ public class ProductPMController {
     @PostMapping("/bulk-delete")
     public ApiResponse<BulkDeleteResponse> bulkDelete(@Valid @RequestBody BulkDeleteRequest request) {
         return ApiResponse.success(
-            productAdminService.bulkDelete(request.getProductIds()), 
-            "Bulk delete operation completed"
-        );
+                productAdminService.bulkDelete(request.getProductIds()),
+                "Bulk delete operation completed");
     }
 
     @PostMapping("/{productId}/adjust-stock")
     public ApiResponse<ProductResponse> adjustStock(
-        @PathVariable Long productId,
-        @Valid @RequestBody StockAdjustmentRequest request
-    ) {
+            @PathVariable Long productId,
+            @Valid @RequestBody StockAdjustmentRequest request) {
         return ApiResponse.success(
-            productAdminService.adjustStock(productId, request),
-            "Stock adjusted successfully"
-        );
+                productAdminService.adjustStock(productId, request),
+                "Stock adjusted successfully");
     }
 }
