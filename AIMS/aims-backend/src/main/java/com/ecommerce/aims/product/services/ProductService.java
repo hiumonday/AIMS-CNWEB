@@ -67,6 +67,15 @@ public class ProductService {
         return toResponse(product);
     }
 
+    public List<ProductResponse> getProducts(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return productRepository.findAllById(ids).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     private Specification<Product> buildSpecification(ProductFilterRequest request, boolean activeOnly) {
         return (root, query, cb) -> {
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
