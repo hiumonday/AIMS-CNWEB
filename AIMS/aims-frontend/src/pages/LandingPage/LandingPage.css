@@ -400,11 +400,13 @@
 }
 
 @keyframes scrollPulse {
+
   0%,
   100% {
     transform: translateY(-2px);
     opacity: 0.6;
   }
+
   50% {
     transform: translateY(4px);
     opacity: 1;
@@ -500,7 +502,7 @@
   }
 }
 
-@media (max-height: 780px) {
+@media (max-height: 600px) {
   .scrolly__stage {
     position: static;
     height: auto;

@@ -1,150 +1,152 @@
-import type { CSSProperties, FC } from 'react';
+import { useState, type CSSProperties, type FC, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
-import InteractiveNewspaper from '../../components/InteractiveNewspaper';
 import type { LandingSectionProps } from './types';
 import './NewspaperSection.css';
 
 export const newspaperTheme = {
   key: 'newspaper',
-  label: 'Tạp chí',
+  label: 'Newsstand',
   searchKey: 'Newspaper',
-  heroWord: 'Press',
-  headline: 'Tạp chí năng động, cập nhật mỗi ngày',
-  description: 'Bố cục nhanh, điểm tin rõ, chuyên mục trending, đọc lướt dễ.',
+  heroWord: 'EXTRA',
+  headline: 'The Daily Stories',
+  description: 'Cập nhật dòng chảy tin tức mỗi sáng với phong cách tối giản.',
   accent: '#1e7fbf',
-  light: '#f6f1e8',
-  dark: '#16233a',
-  word: 'rgba(0, 0, 0, 0.08)',
-  heroImage:
-    'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80',
-  badges: ['Tin nhanh', 'Phóng sự', 'Ảnh đặc tả'],
-  metrics: [
-    { value: '24h', label: 'Tin mới mỗi ngày' },
-    { value: '50+', label: 'Chuyên mục trend' },
-    { value: '15k', label: 'Giá từ 15.000' },
-  ],
-  callouts: [
-    {
-      title: 'Breaking',
-      text: 'Tin nóng 24h',
-      style: { top: '12%', right: '8%' },
-    },
-    {
-      title: 'Chuyên đề ảnh',
-      text: 'Visual storytelling',
-      style: { bottom: '14%', left: '4%' },
-    },
-  ],
-  featureTitle: 'Đọc nhanh, bắt trend nhanh',
-  featureCopy: 'Highlight chủ đề, bố cục theo nhịp đọc, giữ cảm giác báo giấy.',
-  features: [
-    {
-      title: 'Headline nổi bật',
-      text: 'Điểm tin chính cô đọng.',
-      image:
-        'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      title: 'Chuyên mục tuần',
-      text: 'Kinh tế, văn hóa, đời sống.',
-      image:
-        'https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      title: 'Ảnh phóng sự',
-      text: 'Bố cục mạnh, dễ lưu trữ.',
-      image:
-        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80',
-    },
-  ],
+  light: '#f4f4f4',
+  dark: '#111',
+  word: '#e2e2e2',
 };
 
 const NewspaperSection: FC<LandingSectionProps> = ({
   style,
   heroStyle,
-  contentStyle,
-  scrollHint,
   wordStyle,
+  isActive,
 }) => {
+  const papers = Array.from({ length: 6 });
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+
+  const handlePaperClick = (index: number, e: MouseEvent) => {
+    e.stopPropagation();
+    if (expandedIndex === index) return;
+    setExpandedIndex(index);
+  };
+
+  const handleClose = (e?: MouseEvent) => {
+    e?.stopPropagation();
+    setExpandedIndex(null);
+  };
+
   return (
     <section className="theme theme--newspaper" style={style}>
-      <div className="theme__hero" style={heroStyle}>
-        <div className="theme__hero-left">
-          <div className="theme__eyebrow">AIMS MEDIA · {newspaperTheme.label}</div>
-          <h1>{newspaperTheme.headline}</h1>
-          <p>{newspaperTheme.description}</p>
-          <div className="theme__actions">
-            <Link
-              className="btn primary"
-              to={`/products?query=${newspaperTheme.searchKey ?? newspaperTheme.label}`}
-            >
-              Khám phá {newspaperTheme.label}
-            </Link>
-            <Link className="btn light" to="/products">
-              Xem tất cả
-            </Link>
-          </div>
-          <div className="theme__badges">
-            {newspaperTheme.badges.map((badge) => (
-              <span key={badge} className="theme__badge">
-                {badge}
-              </span>
-            ))}
-          </div>
-          <div className="theme__metrics">
-            {newspaperTheme.metrics.map((metric) => (
-              <div key={metric.label} className="theme__metric">
-                <strong>{metric.value}</strong>
-                <span>{metric.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="theme__hero-right">
-          <div className="theme__hero-word" style={wordStyle}>
-            {newspaperTheme.heroWord}
-          </div>
-          <div
-            className="theme__hero-figure theme__hero-figure--newspaper"
-            style={{ '--hero-image': `url(${newspaperTheme.heroImage})` } as CSSProperties}
-            aria-hidden="true"
-          >
-            <InteractiveNewspaper />
-          </div>
-          {newspaperTheme.callouts.map((callout) => (
-            <div key={callout.title} className="theme__callout" style={callout.style}>
-              <strong>{callout.title}</strong>
-              <span>{callout.text}</span>
-            </div>
-          ))}
-        </div>
+      <div className="np-bg-word" style={wordStyle}>
+        {newspaperTheme.heroWord}
       </div>
 
-      <div className="theme__content" style={contentStyle}>
-        <div className="theme__content-head">
-          <h2>{newspaperTheme.featureTitle}</h2>
-          <p>{newspaperTheme.featureCopy}</p>
+      <div className="np-stage" style={heroStyle}>
+
+        {/* Header ẩn đi khi đọc báo */}
+        <div className={`np-header ${expandedIndex !== null ? 'fade-out' : ''}`}>
+          <div className="np-eyebrow">AIMS MEDIA · {newspaperTheme.label}</div>
+          <h1 className="np-headline">{newspaperTheme.headline}</h1>
+          <p className="np-subhead">{newspaperTheme.description}</p>
         </div>
-        <div className="theme__content-grid">
-          {newspaperTheme.features.map((feature) => (
-            <article key={feature.title} className="theme__feature-card">
-              <div className="theme__feature-media">
-                <img src={feature.image} alt={feature.title} loading="lazy" />
+
+        <div className={`np-fan-wrapper ${isActive ? 'is-fanned' : ''}`}>
+          {papers.map((_, index) => {
+            const isExpanded = expandedIndex === index;
+            const isHidden = expandedIndex !== null && !isExpanded;
+
+            return (
+              <div
+                key={index}
+                className={`np-card ${isExpanded ? 'is-expanded' : ''} ${isHidden ? 'is-hidden' : ''}`}
+                style={{ '--i': index } as CSSProperties}
+                onClick={(e) => handlePaperClick(index, e)}
+              >
+                {isExpanded && (
+                  <button className="np-close-btn" onClick={handleClose}>
+                    ✕ Đóng
+                  </button>
+                )}
+
+                {/* --- BÌA BÁO (Hiện khi chưa mở) --- */}
+                <div className="np-cover">
+                  <div className="np-paper-head">
+                    <span className="np-paper-name">THE DAILY</span>
+                    <span className="np-paper-date">VOL.{index + 1}</span>
+                  </div>
+                  <div className="np-hero-img"></div>
+                  <div className="np-headline-text">
+                    GLOBAL MARKETS RALLY AS TECH STOCKS SOAR
+                  </div>
+                  <div className="np-lines">
+                    <span className="np-line" style={{ width: '100%' }}></span>
+                    <span className="np-line" style={{ width: '92%' }}></span>
+                    <span className="np-line" style={{ width: '96%' }}></span>
+                    <span className="np-line" style={{ width: '65%' }}></span>
+                  </div>
+                </div>
+
+                {/* --- NỘI DUNG ĐỌC (Hiện khi mở) --- */}
+                <div className="np-inner">
+                  <div className="np-page left">
+                    <h2>The Morning Brief</h2>
+                    <h3>Tin Nổi Bật</h3>
+                    <p>
+                      Thị trường công nghệ đang chứng kiến sự bùng nổ mạnh mẽ với hàng loạt sản phẩm AI mới ra mắt.
+                      Các chuyên gia dự báo xu hướng này sẽ tiếp tục kéo dài trong thập kỷ tới, thay đổi hoàn toàn cách chúng ta làm việc.
+                    </p>
+                    <div className="np-inner-img"></div>
+                    <div className="np-cols">
+                      <p>
+                        Trong khi đó, mảng văn hóa giải trí cũng không kém phần sôi động với sự trở lại của đĩa than và văn hóa đọc tạp chí in.
+                      </p>
+                      <p>
+                        Giới trẻ đang tìm về những giá trị xưa cũ (retro) như một cách để cân bằng lại cuộc sống số hối hả.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="np-page right">
+                    <h3>Góc Nhìn Biên Tập</h3>
+
+                    <div className="np-article-mini">
+                      <h4>Nghệ Thuật & Đời Sống</h4>
+                      <p>Khám phá những triển lãm nghệ thuật đương đại đang diễn ra tại thành phố, nơi giao thoa giữa truyền thống và hiện đại.</p>
+                    </div>
+
+                    <div className="np-article-mini">
+                      <h4>Du Lịch: Kyoto Mùa Thu</h4>
+                      <p>Một hành trình qua những con phố cổ, đắm mình trong sắc đỏ của lá phong và hương trà xanh thoang thoảng.</p>
+                    </div>
+
+                    <div className="np-ad-box">
+                      <span>DÀNH RIÊNG CHO BẠN</span>
+                      <strong>GIẢM 50% GÓI HỘI VIÊN</strong>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="theme__feature-body">
-                <h3>{feature.title}</h3>
-                <p>{feature.text}</p>
-              </div>
-            </article>
-          ))}
+            );
+          })}
         </div>
+
+        <div className={`np-actions ${expandedIndex !== null ? 'fade-out' : ''}`}>
+          <Link className="np-btn-read" to={`/products?query=${newspaperTheme.searchKey}`}>
+            Đọc báo ngay
+          </Link>
+        </div>
+
       </div>
 
-      <div className="theme__scroll-hint">
-        <span>{scrollHint}</span>
-        <div className="theme__scroll-indicator">
-          <span></span>
-        </div>
+      <div
+        className={`np-overlay ${expandedIndex !== null ? 'active' : ''}`}
+        onClick={() => handleClose()}
+      ></div>
+
+      <div className="np-scroll-hint">
+        <span>Cuộn xuống để xem sách</span>
+        <div className="np-line-ind"></div>
       </div>
     </section>
   );
