@@ -48,6 +48,7 @@ export type CartItem = {
 
 export type DeliveryInfo = {
   fullName: string;
+  email: string;
   phone: string;
   address: string;
   city: string;

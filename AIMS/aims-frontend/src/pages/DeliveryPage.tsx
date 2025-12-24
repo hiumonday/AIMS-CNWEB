@@ -12,16 +12,16 @@ const DeliveryPage = () => {
   const { subtotal, lines } = useCart();
   const [form, setForm] = useState<DeliveryInfo>(() => {
     const saved = localStorage.getItem("deliveryInfo");
-    return saved
-      ? JSON.parse(saved)
-      : {
-        fullName: "",
-        phone: "",
-        address: "",
-        city: "",
-        state: "",
-        note: "",
-      };
+    const defaults = {
+      fullName: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      state: "",
+      note: "",
+    };
+    return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
   });
 
   useEffect(() => {
@@ -40,6 +40,7 @@ const DeliveryPage = () => {
   const onContinue = async () => {
     setTouched({
       fullName: true,
+      email: true,
       phone: true,
       address: true,
       city: true,
@@ -48,6 +49,7 @@ const DeliveryPage = () => {
 
     if (
       !form.fullName ||
+      !form.email ||
       !form.phone ||
       !form.address ||
       !form.city ||
@@ -61,7 +63,7 @@ const DeliveryPage = () => {
     try {
       // Create order with delivery info and cart items
       const order = await orderService.createOrder({
-        customerEmail: "customer@example.com", // TODO: Get from auth context if available
+        customerEmail: form.email,
         customerName: form.fullName,
         phone: form.phone,
         addressLine: form.address,
@@ -157,6 +159,19 @@ const DeliveryPage = () => {
               placeholder="John Doe"
             />
             {touched.fullName && !form.fullName && (
+              <span className="warning">Bắt buộc nhập</span>
+            )}
+          </div>
+          <div className="input-group">
+            <label>Email *</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+              placeholder="customer@example.com"
+            />
+            {touched.email && !form.email && (
               <span className="warning">Bắt buộc nhập</span>
             )}
           </div>

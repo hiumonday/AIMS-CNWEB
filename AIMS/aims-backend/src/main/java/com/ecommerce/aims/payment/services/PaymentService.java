@@ -1,6 +1,7 @@
 package com.ecommerce.aims.payment.services;
 
 import com.ecommerce.aims.common.exception.NotFoundException;
+import com.ecommerce.aims.notification.services.EmailNotificationService;
 import com.ecommerce.aims.order.models.Order;
 import com.ecommerce.aims.order.models.OrderStatus;
 import com.ecommerce.aims.order.repository.OrderRepository;
@@ -27,6 +28,7 @@ public class PaymentService {
     private final PayPalService payPalService;
     private final VietQRService vietQRService;
     private final OrderRepository orderRepository;
+    private final EmailNotificationService emailNotificationService;
 
     @Transactional
     public PaymentResultResponse createPayment(CreatePaymentRequest request) {
@@ -85,14 +87,17 @@ public class PaymentService {
         }
         paymentTransactionRepository.save(transaction);
         // SOLID: Order status changes are mixed into payment capture; consider a domain event handler.
-        updateOrderPaid(transaction.getOrderId());
+        Order order = updateOrderPaid(transaction.getOrderId());
+        if (order != null && transaction.getStatus() == PaymentStatus.CAPTURED) {
+            emailNotificationService.sendEmail(order.getId(), transaction.getId());
+        }
         return response;
     }
 
-    private void updateOrderPaid(Long orderId) {
+    private Order updateOrderPaid(Long orderId) {
         // SOLID: This is order-domain behavior embedded in payment service (SRP).
         if (orderId == null) {
-            return;
+            return null;
         }
         Order order = orderRepository.findById(orderId).orElse(null);
         if (order != null) {
@@ -103,7 +108,8 @@ public class PaymentService {
                 throw new BusinessException("Order already rejected");
             }
             order.setStatus(OrderStatus.PENDING_PROCESSING);
-            orderRepository.save(order);
+            return orderRepository.save(order);
         }
+        return null;
     }
 }
