@@ -292,4 +292,15 @@ public class EmailNotificationService {
         }
         return value;
     }
+
+
+public void sendPasswordResetEmail(String email, String token) {}
+
+public void sendAdminPasswordResetEmail(String email, String token) {}
+public void sendUserCreatedByAdminEmail(String email, String temporaryPassword) {}
+public void sendUserUpdatedByAdminEmail(String email) {}
+
+public void sendUserDeletedByAdminEmail(String email) {}
+public void sendUserLockedByAdminEmail(String email) {}
+public void sendUserUnlockedByAdminEmail(String email) {}
 }
