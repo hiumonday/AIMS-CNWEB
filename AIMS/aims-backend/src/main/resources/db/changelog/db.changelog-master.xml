@@ -12,4 +12,5 @@
     <include file="db/changelog/drop-pbac.xml" />
     <include file="db/changelog/db.changelog-master.yaml" />
     <include file="db/changelog/add-image-changelog.xml" />
+    <include file="db/changelog/seed-image-product-data.xml" />
 </databaseChangeLog>

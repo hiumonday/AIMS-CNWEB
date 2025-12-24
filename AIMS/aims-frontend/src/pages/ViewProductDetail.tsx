@@ -182,7 +182,7 @@ const ViewProductDetail: FC = () => {
 
       <div className="product-shell">
         <div className="product__image-card">
-          <img src={product.image} alt={product.title} />
+          <img src={product.imageUrl} alt={product.title} />
         </div>
 
         <div className="product__info-card">

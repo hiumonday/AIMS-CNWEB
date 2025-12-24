@@ -1,8 +1,8 @@
-export type Category = 'Book' | 'CD' | 'Newspaper' | 'DVD';
+export type Category = "Book" | "CD" | "Newspaper" | "DVD";
 
-export type ProductTypeCode = 'BOOK' | 'CD' | 'NEWSPAPER' | 'DVD';
+export type ProductTypeCode = "BOOK" | "CD" | "NEWSPAPER" | "DVD";
 
-export type ProductStatus = 'ACTIVE' | 'DEACTIVATED';
+export type ProductStatus = "ACTIVE" | "DEACTIVATED";
 
 export type ProductDimensions = {
   height?: number;
@@ -18,7 +18,7 @@ export type Product = {
   genre: string;
   price: number; // exclude VAT
   stock: number;
-  image: string;
+  imageUrl: string;
   shortDesc: string;
   typeCode?: ProductTypeCode;
   status?: ProductStatus;

@@ -205,7 +205,7 @@ const ProductListPage = () => {
               return (
                 <article key={item.id} className="card product-card">
                   <div className="product-card__media">
-                    <img src={item.image} alt={item.title} loading="lazy" />
+                    <img src={item.imageUrl} alt={item.title} loading="lazy" />
                     <span className="product-badge">{typeLabel}</span>
                     {item.stock < 5 && <span className="stock-warning">Sắp hết!</span>}
                   </div>
