@@ -2,11 +2,13 @@ package com.ecommerce.aims.user.controllers;
 
 import com.ecommerce.aims.common.dto.ApiResponse;
 import com.ecommerce.aims.common.dto.PageResponse;
+import com.ecommerce.aims.user.dto.UpdateUserRolesRequest;
 import com.ecommerce.aims.user.dto.UserRequest;
 import com.ecommerce.aims.user.dto.UserResponse;
 import com.ecommerce.aims.user.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,5 +54,17 @@ public class UserAdminController {
     @PostMapping("/{id}/unlock")
     public ApiResponse<UserResponse> unlock(@PathVariable Long id) {
         return ApiResponse.success(userService.unlockUser(id), "User unlocked");
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ApiResponse.success(null, "User deleted");
+    }
+
+    @PutMapping("/{id}/roles")
+    public ApiResponse<UserResponse> updateRoles(@PathVariable Long id, 
+                                                  @Valid @RequestBody UpdateUserRolesRequest request) {
+        return ApiResponse.success(userService.updateUserRoles(id, request.getRoles()), "User roles updated");
     }
 }

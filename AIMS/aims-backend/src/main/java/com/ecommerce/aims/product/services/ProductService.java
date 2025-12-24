@@ -29,7 +29,22 @@ public class ProductService {
 
     public PageResponse<ProductResponse> listProducts(ProductFilterRequest filterRequest) {
         Objects.requireNonNull(filterRequest, "filterRequest must not be null");
-        Specification<Product> spec = Objects.requireNonNull(buildSpecification(filterRequest), "specification must not be null");
+        Specification<Product> spec = Objects.requireNonNull(buildSpecification(filterRequest, true), "specification must not be null");
+        int pageNumber = filterRequest.getPage();
+        int pageSize = filterRequest.getSize();
+        Page<Product> page = productRepository.findAll(spec, PageRequest.of(pageNumber, pageSize));
+        return PageResponse.<ProductResponse>builder()
+            .items(page.map(this::toResponse).getContent())
+            .page(page.getNumber())
+            .size(page.getSize())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .build();
+    }
+
+    public PageResponse<ProductResponse> listProductsForPM(ProductFilterRequest filterRequest) {
+        Objects.requireNonNull(filterRequest, "filterRequest must not be null");
+        Specification<Product> spec = Objects.requireNonNull(buildSpecification(filterRequest, false), "specification must not be null");
         int pageNumber = filterRequest.getPage();
         int pageSize = filterRequest.getSize();
         Page<Product> page = productRepository.findAll(spec, PageRequest.of(pageNumber, pageSize));
@@ -49,7 +64,7 @@ public class ProductService {
         return toResponse(product);
     }
 
-    private Specification<Product> buildSpecification(ProductFilterRequest request) {
+    private Specification<Product> buildSpecification(ProductFilterRequest request, boolean activeOnly) {
         return (root, query, cb) -> {
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
             if (StringUtils.hasText(request.getQuery())) {
@@ -68,7 +83,9 @@ public class ProductService {
                     request.getTypeCode().toLowerCase()
                 ));
             }
-            predicates.add(cb.equal(root.get("status"), ProductStatus.ACTIVE));
+            if (activeOnly) {
+                predicates.add(cb.equal(root.get("status"), ProductStatus.ACTIVE));
+            }
             BigDecimal minPrice = request.getMinPrice();
             BigDecimal maxPrice = request.getMaxPrice();
             String priceRange = request.getPriceRange();

@@ -32,6 +32,18 @@ public class RoleService {
     }
 
     @Transactional
+    public Role updateRoleById(Long id, RoleName name) {
+        Role role = getRoleById(id);
+        
+        if (roleRepository.findByName(name).isPresent()) {
+            throw new BusinessException("Role name already exists: " + name);
+        }
+        
+        role.setName(name);
+        return roleRepository.save(role);
+    }
+
+    @Transactional
     public Role createRole(RoleName name) {
         if (roleRepository.findByName(name).isPresent()) {
             throw new BusinessException("Role already exists: " + name);
