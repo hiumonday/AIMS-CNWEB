@@ -5,6 +5,7 @@ import com.ecommerce.aims.common.dto.PageResponse;
 import com.ecommerce.aims.common.exception.BusinessException;
 import com.ecommerce.aims.common.exception.NotFoundException;
 import com.ecommerce.aims.common.exception.OutOfStockException;
+import com.ecommerce.aims.order.config.OrderExpirationConfig;
 import com.ecommerce.aims.order.dto.CreateOrderRequest;
 import com.ecommerce.aims.order.dto.OrderResponse;
 import com.ecommerce.aims.order.models.DeliveryInfo;
@@ -22,6 +23,7 @@ import com.ecommerce.aims.product.repository.ProductRepository;
 import com.ecommerce.aims.product.services.StockService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +44,7 @@ public class OrderService {
     private final IPaymentTransactionRepository paymentTransactionRepository;
     private final StockService stockService;
     private final CartService cartService;
+    private final OrderExpirationConfig expirationConfig;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -153,6 +156,9 @@ public class OrderService {
                 .build();
         order.setInvoice(invoice);
 
+        // Set expiration time using config
+        order.setExpiresAt(LocalDateTime.now().plusMinutes(expirationConfig.getPaymentMinutes()));
+
         Order saved = orderRepository.save(order);
 
         PaymentTransaction transaction = PaymentTransaction.builder()
@@ -160,6 +166,7 @@ public class OrderService {
                 .status(PaymentStatus.INIT)
                 .amount(saved.getTotalWithVat())
                 .currency("VND")
+                .expiresAt(LocalDateTime.now().plusMinutes(expirationConfig.getPaymentMinutes()))
                 .build();
         PaymentTransaction savedTransaction = paymentTransactionRepository.save(transaction);
 

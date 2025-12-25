@@ -62,6 +62,8 @@ public class Order {
 
     private LocalDateTime updatedAt;
 
+    private LocalDateTime expiresAt; // Payment reservation expiration time
+
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
