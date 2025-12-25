@@ -35,6 +35,11 @@ public class OrderExpirationScheduler {
     private final IPaymentTransactionRepository paymentTransactionRepository;
     private final OrderPaymentService orderPaymentService;
 
+    @jakarta.annotation.PostConstruct
+    public void init() {
+        log.info("OrderExpirationScheduler initialized and ready to run");
+    }
+
     /**
      * Runs every minute (60 seconds)
      * Cron: second minute hour day month weekday
@@ -42,12 +47,16 @@ public class OrderExpirationScheduler {
     @Scheduled(cron = "0 * * * * *") // Every minute at 0 seconds
     @Transactional
     public void expireOrders() {
+        log.debug("OrderExpirationScheduler.expireOrders() triggered at {}", LocalDateTime.now());
         LocalDateTime now = LocalDateTime.now();
 
         // Find all pending orders that have expired
         List<Order> expiredOrders = orderRepository.findByStatusAndExpiresAtBefore(
                 OrderStatus.PENDING_PROCESSING,
                 now);
+
+        log.debug("Found {} expired orders (status=PENDING_PROCESSING, expiresAt before {})", 
+                  expiredOrders.size(), now);
 
         if (expiredOrders.isEmpty()) {
             return; // No expired orders to process

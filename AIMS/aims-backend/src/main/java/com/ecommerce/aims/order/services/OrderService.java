@@ -17,19 +17,14 @@ import com.ecommerce.aims.order.repository.OrderRepository;
 import com.ecommerce.aims.payment.models.PaymentStatus;
 import com.ecommerce.aims.payment.models.PaymentTransaction;
 import com.ecommerce.aims.payment.repository.IPaymentTransactionRepository;
-import com.ecommerce.aims.payment.models.PaymentStatus;
-import com.ecommerce.aims.payment.models.PaymentTransaction;
-import com.ecommerce.aims.payment.repository.IPaymentTransactionRepository;
 import com.ecommerce.aims.product.models.Product;
 import com.ecommerce.aims.product.models.ProductStatus;
 import com.ecommerce.aims.product.repository.ProductRepository;
-import com.ecommerce.aims.product.services.StockService;
 import com.ecommerce.aims.product.services.StockService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -166,24 +161,14 @@ public class OrderService {
 
         Order saved = orderRepository.save(order);
 
-        PaymentTransaction transaction = PaymentTransaction.builder()
-                .orderId(saved.getId())
-                .status(PaymentStatus.INIT)
-                .amount(saved.getTotalWithVat())
-                .currency("VND")
-                .expiresAt(LocalDateTime.now().plusMinutes(expirationConfig.getPaymentMinutes()))
-                .build();
-        PaymentTransaction savedTransaction = paymentTransactionRepository.save(transaction);
-
-        return toResponse(saved, savedTransaction);
+        return toResponse(saved);
     }
 
     public OrderResponse getOrder(Long id) {
         Long requiredId = Objects.requireNonNull(id, "id must not be null");
         Order order = orderRepository.findById(requiredId)
                 .orElseThrow(() -> new NotFoundException("Order not found"));
-        PaymentTransaction transaction = paymentTransactionRepository.findByOrderId(order.getId()).orElse(null);
-        return toResponse(order, transaction);
+        return toResponse(order);
     }
 
     @Transactional

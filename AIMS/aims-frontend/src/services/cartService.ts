@@ -136,11 +136,6 @@ export async function removeItem(
  * Stores in localStorage for persistence across page reloads
  */
 export function getSessionKey(): string {
-  const userId = localStorage.getItem("userId");
-  if (userId) {
-    return userId;
-  }
-
   const STORAGE_KEY = "cartSessionKey";
   let sessionKey = localStorage.getItem(STORAGE_KEY);
 
