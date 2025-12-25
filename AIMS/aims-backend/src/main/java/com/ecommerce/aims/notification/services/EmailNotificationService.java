@@ -8,7 +8,7 @@ import com.ecommerce.aims.order.models.Invoice;
 import com.ecommerce.aims.order.models.Order;
 import com.ecommerce.aims.order.repository.OrderRepository;
 import com.ecommerce.aims.payment.models.PaymentTransaction;
-import com.ecommerce.aims.payment.repository.PaymentTransactionRepository;
+import com.ecommerce.aims.payment.repository.IPaymentTransactionRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.math.BigDecimal;
@@ -40,7 +40,7 @@ public class EmailNotificationService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
     private final OrderRepository orderRepository;
-    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final IPaymentTransactionRepository IPaymentTransactionRepository;
 
     @Value("${spring.mail.from:${spring.mail.username:no-reply@localhost}}")
     private String fromAddress;
@@ -102,9 +102,9 @@ public class EmailNotificationService {
 
     private PaymentTransaction resolveTransaction(Long orderId, Long transactionId) {
         if (transactionId != null) {
-            return paymentTransactionRepository.findById(transactionId).orElse(null);
+            return IPaymentTransactionRepository.findById(transactionId).orElse(null);
         }
-        return paymentTransactionRepository.findTopByOrderIdOrderByCreatedAtDesc(orderId).orElse(null);
+        return IPaymentTransactionRepository.findTopByOrderIdOrderByCreatedAtDesc(orderId).orElse(null);
     }
 
     private Context buildContextFromOrder(Order order, PaymentTransaction transaction) {

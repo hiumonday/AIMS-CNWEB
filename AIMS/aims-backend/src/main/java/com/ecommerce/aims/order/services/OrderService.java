@@ -3,6 +3,7 @@ package com.ecommerce.aims.order.services;
 import com.ecommerce.aims.common.dto.PageResponse;
 import com.ecommerce.aims.common.exception.BusinessException;
 import com.ecommerce.aims.common.exception.NotFoundException;
+import com.ecommerce.aims.common.exception.OutOfStockException;
 import com.ecommerce.aims.order.dto.CreateOrderRequest;
 import com.ecommerce.aims.order.dto.OrderResponse;
 import com.ecommerce.aims.order.models.DeliveryInfo;
@@ -11,12 +12,17 @@ import com.ecommerce.aims.order.models.Order;
 import com.ecommerce.aims.order.models.OrderItem;
 import com.ecommerce.aims.order.models.OrderStatus;
 import com.ecommerce.aims.order.repository.OrderRepository;
+import com.ecommerce.aims.payment.models.PaymentStatus;
+import com.ecommerce.aims.payment.models.PaymentTransaction;
+import com.ecommerce.aims.payment.repository.IPaymentTransactionRepository;
 import com.ecommerce.aims.product.models.Product;
 import com.ecommerce.aims.product.models.ProductStatus;
 import com.ecommerce.aims.product.repository.ProductRepository;
+import com.ecommerce.aims.product.services.StockService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -32,6 +38,8 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final IPaymentTransactionRepository IPaymentTransactionRepository;
+    private final StockService stockService;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -39,6 +47,48 @@ public class OrderService {
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new BusinessException("Order items must not be empty");
         }
+
+        List<Long> productIds = request.getItems().stream()
+            .map(line -> Objects.requireNonNull(line.getProductId(), "productId must not be null"))
+            .distinct()
+            .sorted()
+            .collect(Collectors.toList());
+
+        List<Product> lockedProducts = productRepository.findAllByIdInForUpdate(productIds);
+        Map<Long, Product> productMap = lockedProducts.stream()
+            .collect(Collectors.toMap(Product::getId, p -> p));
+
+        Map<Long, Integer> totalQuantityByProduct = new HashMap<>();
+        for (var line : request.getItems()) {
+            Long productId = line.getProductId();
+            totalQuantityByProduct.merge(productId, line.getQuantity(), Integer::sum);
+        }
+
+        for (var entry : totalQuantityByProduct.entrySet()) {
+            Long productId = entry.getKey();
+            Integer requestedQuantity = entry.getValue();
+            Product product = productMap.get(productId);
+            
+            if (product == null) {
+                throw new NotFoundException("Product not found: " + productId);
+            }
+            if (product.getStatus() == ProductStatus.DEACTIVATED) {
+                throw new BusinessException("Product is deactivated: " + product.getTitle());
+            }
+            int availableStock = product.getStock() == null ? 0 : product.getStock();
+            if (availableStock < requestedQuantity) {
+                throw new OutOfStockException(product.getTitle(), productId, requestedQuantity, availableStock);
+            }
+        }
+
+        for (var entry : totalQuantityByProduct.entrySet()) {
+            Long productId = entry.getKey();
+            Integer quantity = entry.getValue();
+            Product product = productMap.get(productId);
+            int currentStock = product.getStock() == null ? 0 : product.getStock();
+            product.setStock(currentStock - quantity);
+        }
+
         Order order = new Order();
         order.setStatus(OrderStatus.PENDING_PROCESSING);
         order.setCustomerEmail(request.getCustomerEmail());
@@ -51,7 +101,7 @@ public class OrderService {
             .province(request.getProvince())
             .postalCode(request.getPostalCode())
             .build());
-        Map<Long, Product> productMap = loadAndValidateProducts(request);
+
         request.getItems().forEach(line -> {
             Product product = productMap.get(line.getProductId());
             OrderItem item = new OrderItem();
@@ -65,8 +115,6 @@ public class OrderService {
                 item.setTotalPrice(price.multiply(BigDecimal.valueOf(line.getQuantity())));
             }
             order.getItems().add(item);
-            product.setStock(product.getStock() - line.getQuantity());
-            productRepository.save(product);
         });
         BigDecimal totalBeforeVat = order.getItems().stream()
             .map(i -> i.getTotalPrice() == null ? BigDecimal.ZERO : i.getTotalPrice())
@@ -97,14 +145,24 @@ public class OrderService {
         order.setInvoice(invoice);
 
         Order saved = orderRepository.save(order);
-        return toResponse(saved);
+
+        PaymentTransaction transaction = PaymentTransaction.builder()
+            .orderId(saved.getId())
+            .status(PaymentStatus.INIT)
+            .amount(saved.getTotalWithVat())
+            .currency("VND")
+            .build();
+        PaymentTransaction savedTransaction = IPaymentTransactionRepository.save(transaction);
+
+        return toResponse(saved, savedTransaction);
     }
 
     public OrderResponse getOrder(Long id) {
         Long requiredId = Objects.requireNonNull(id, "id must not be null");
         Order order = orderRepository.findById(requiredId)
             .orElseThrow(() -> new NotFoundException("Order not found"));
-        return toResponse(order);
+        PaymentTransaction transaction = IPaymentTransactionRepository.findByOrderId(order.getId()).orElse(null);
+        return toResponse(order, transaction);
     }
 
     @Transactional
@@ -115,16 +173,13 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.PENDING_PROCESSING && order.getStatus() != OrderStatus.PAID) {
             throw new BusinessException("Order cannot be cancelled at this stage");
         }
+
+        stockService.restoreStockWithLocking(order.getItems());
+
         order.setStatus(OrderStatus.CANCELLED);
-        order.getItems().forEach(item -> {
-            Long productId = Objects.requireNonNull(item.getProductId(), "productId must not be null");
-            productRepository.findById(productId).ifPresent(product -> {
-                product.setStock(product.getStock() + item.getQuantity());
-                productRepository.save(product);
-            });
-        });
         Order saved = orderRepository.save(order);
-        return toResponse(saved);
+        PaymentTransaction transaction = IPaymentTransactionRepository.findByOrderId(saved.getId()).orElse(null);
+        return toResponse(saved, transaction);
     }
 
     public PageResponse<OrderResponse> listOrders(int page, int size) {
@@ -139,6 +194,11 @@ public class OrderService {
     }
 
     private OrderResponse toResponse(Order order) {
+        PaymentTransaction transaction = IPaymentTransactionRepository.findByOrderId(order.getId()).orElse(null);
+        return toResponse(order, transaction);
+    }
+
+    private OrderResponse toResponse(Order order, PaymentTransaction transaction) {
         Order requiredOrder = Objects.requireNonNull(order, "order must not be null");
         return OrderResponse.builder()
             .id(requiredOrder.getId())
@@ -159,24 +219,45 @@ public class OrderService {
                     .totalPrice(item.getTotalPrice())
                     .build())
                 .collect(Collectors.toList()))
+            .paymentTransactionId(transaction != null ? transaction.getId() : null)
+            .paymentStatus(transaction != null ? transaction.getStatus() : null)
             .build();
     }
 
     private Map<Long, Product> loadAndValidateProducts(CreateOrderRequest request) {
-        Map<Long, Product> productMap = new HashMap<>();
-        request.getItems().forEach(line -> {
-            Long productId = Objects.requireNonNull(line.getProductId(), "productId must not be null");
-            Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("Product not found: " + productId));
+        List<Long> productIds = request.getItems().stream()
+            .map(line -> Objects.requireNonNull(line.getProductId(), "productId must not be null"))
+            .distinct()
+            .sorted()
+            .collect(Collectors.toList());
+
+        List<Product> lockedProducts = productRepository.findAllByIdInForUpdate(productIds);
+        Map<Long, Product> productMap = lockedProducts.stream()
+            .collect(Collectors.toMap(Product::getId, p -> p));
+
+        Map<Long, Integer> totalQuantityByProduct = new HashMap<>();
+        for (var line : request.getItems()) {
+            Long productId = line.getProductId();
+            totalQuantityByProduct.merge(productId, line.getQuantity(), Integer::sum);
+        }
+
+        for (var entry : totalQuantityByProduct.entrySet()) {
+            Long productId = entry.getKey();
+            Integer requestedQuantity = entry.getValue();
+            Product product = productMap.get(productId);
+            
+            if (product == null) {
+                throw new NotFoundException("Product not found: " + productId);
+            }
             if (product.getStatus() == ProductStatus.DEACTIVATED) {
                 throw new BusinessException("Product is deactivated: " + product.getTitle());
             }
-            if (product.getStock() == null || product.getStock() < line.getQuantity()) {
-                int stock = product.getStock() == null ? 0 : product.getStock();
-                throw new BusinessException("Not enough stock for product " + product.getTitle() + ". Shortage: " + (line.getQuantity() - stock));
+            int availableStock = product.getStock() == null ? 0 : product.getStock();
+            if (availableStock < requestedQuantity) {
+                throw new OutOfStockException(product.getTitle(), productId, requestedQuantity, availableStock);
             }
-            productMap.put(productId, product);
-        });
+        }
+
         return productMap;
     }
 

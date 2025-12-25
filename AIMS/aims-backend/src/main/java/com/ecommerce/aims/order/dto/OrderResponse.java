@@ -2,6 +2,7 @@ package com.ecommerce.aims.order.dto;
 
 import com.ecommerce.aims.order.models.DeliveryInfo;
 import com.ecommerce.aims.order.models.OrderStatus;
+import com.ecommerce.aims.payment.models.PaymentStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +22,8 @@ public class OrderResponse {
     private BigDecimal totalWithVat;
     private LocalDateTime createdAt;
     private List<OrderLine> items;
+    private Long paymentTransactionId;
+    private PaymentStatus paymentStatus;
 
     @Data
     @Builder
