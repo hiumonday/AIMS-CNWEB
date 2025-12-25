@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -39,6 +40,7 @@ public class ProductAdminService {
     private final TypeAttributeRepository typeAttributeRepository;
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public ProductResponse create(ProductRequest request) {
         Objects.requireNonNull(request, "request must not be null");
         validateRequest(request);
@@ -52,6 +54,7 @@ public class ProductAdminService {
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public ProductResponse update(Long id, ProductRequest request) {
         Long requiredId = Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(request, "request must not be null");
@@ -66,15 +69,16 @@ public class ProductAdminService {
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public void deleteOrDeactivate(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Product not found"));
-        
+
         long deletesToday = countDeletesToday();
         if (deletesToday >= 20) {
             throw new BusinessException("Daily delete limit reached (20 products/day)");
         }
-        
+
         Integer stock = product.getStock();
         if (stock != null && stock > 0) {
             product.setStatus(ProductStatus.DEACTIVATED);
@@ -89,56 +93,56 @@ public class ProductAdminService {
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public BulkDeleteResponse bulkDelete(List<Long> productIds) {
         Objects.requireNonNull(productIds, "productIds must not be null");
-        
+
         if (productIds.isEmpty()) {
             throw new BusinessException("Product IDs list cannot be empty");
         }
-        
+
         if (productIds.size() > 10) {
             throw new BusinessException("Cannot delete more than 10 products at once");
         }
-        
+
         long deletesToday = countDeletesToday();
         long remainingQuota = 20 - deletesToday;
-        
+
         if (remainingQuota <= 0) {
             throw new BusinessException("Daily delete limit reached (20 products/day)");
         }
-        
+
         if (productIds.size() > remainingQuota) {
             throw new BusinessException(
-                String.format("Cannot delete %d products. Daily quota remaining: %d", 
-                    productIds.size(), remainingQuota)
-            );
+                    String.format("Cannot delete %d products. Daily quota remaining: %d",
+                            productIds.size(), remainingQuota));
         }
-        
+
         List<Long> deletedIds = new ArrayList<>();
         List<Long> deactivatedIds = new ArrayList<>();
         List<String> errors = new ArrayList<>();
-        
+
         for (Long productId : productIds) {
             try {
                 Product product = productRepository.findById(productId)
-                    .orElseThrow(() -> new NotFoundException("Product not found: " + productId));
-                
+                        .orElseThrow(() -> new NotFoundException("Product not found: " + productId));
+
                 Integer stock = product.getStock();
                 if (stock != null && stock > 0) {
                     product.setStatus(ProductStatus.DEACTIVATED);
                     productRepository.save(product);
                     historyRepository.save(ProductHistory.builder()
-                        .product(product)
-                        .action("DEACTIVATE")
-                        .note("Bulk operation: Stock remaining, deactivated")
-                        .build());
+                            .product(product)
+                            .action("DEACTIVATE")
+                            .note("Bulk operation: Stock remaining, deactivated")
+                            .build());
                     deactivatedIds.add(productId);
                 } else {
                     historyRepository.save(ProductHistory.builder()
-                        .product(null)
-                        .action("DELETE")
-                        .note("Bulk operation: Deleted product " + productId)
-                        .build());
+                            .product(null)
+                            .action("DELETE")
+                            .note("Bulk operation: Deleted product " + productId)
+                            .build());
                     productRepository.delete(product);
                     deletedIds.add(productId);
                 }
@@ -146,50 +150,50 @@ public class ProductAdminService {
                 errors.add("Product " + productId + ": " + e.getMessage());
             }
         }
-        
+
         return BulkDeleteResponse.builder()
-            .deletedCount(deletedIds.size())
-            .deactivatedCount(deactivatedIds.size())
-            .deletedIds(deletedIds)
-            .deactivatedIds(deactivatedIds)
-            .errors(errors)
-            .build();
+                .deletedCount(deletedIds.size())
+                .deactivatedCount(deactivatedIds.size())
+                .deletedIds(deletedIds)
+                .deactivatedIds(deactivatedIds)
+                .errors(errors)
+                .build();
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public ProductResponse adjustStock(Long id, StockAdjustmentRequest request) {
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(request, "request must not be null");
-        
+
         Product product = productRepository.findById(id)
-            .orElseThrow(() -> new NotFoundException("Product not found"));
-        
+                .orElseThrow(() -> new NotFoundException("Product not found"));
+
         Integer currentStock = product.getStock();
         if (currentStock == null) {
             currentStock = 0;
         }
-        
+
         Integer newStock = currentStock + request.getQuantityChange();
-        
+
         if (newStock < 0) {
             throw new BusinessException(
-                String.format("Invalid stock adjustment. Current: %d, Change: %d, Result: %d (cannot be negative)",
-                    currentStock, request.getQuantityChange(), newStock)
-            );
+                    String.format("Invalid stock adjustment. Current: %d, Change: %d, Result: %d (cannot be negative)",
+                            currentStock, request.getQuantityChange(), newStock));
         }
-        
+
         product.setStock(newStock);
         Product saved = productRepository.save(product);
-        
+
         String note = String.format("Stock adjusted: %d → %d (change: %+d). Reason: %s",
-            currentStock, newStock, request.getQuantityChange(), request.getReason());
-        
+                currentStock, newStock, request.getQuantityChange(), request.getReason());
+
         historyRepository.save(ProductHistory.builder()
-            .product(saved)
-            .action("STOCK_ADJUSTMENT")
-            .note(note)
-            .build());
-        
+                .product(saved)
+                .action("STOCK_ADJUSTMENT")
+                .note(note)
+                .build());
+
         return toResponse(saved);
     }
 

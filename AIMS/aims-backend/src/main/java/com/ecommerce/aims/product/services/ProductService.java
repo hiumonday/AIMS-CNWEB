@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -28,6 +29,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
 
+    @Cacheable(value = "products", key = "#filterRequest")
     public PageResponse<ProductResponse> listProducts(ProductFilterRequest filterRequest) {
         Objects.requireNonNull(filterRequest, "filterRequest must not be null");
         Specification<Product> spec = Objects.requireNonNull(buildSpecification(filterRequest, true),

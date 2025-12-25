@@ -1,5 +1,6 @@
 package com.ecommerce.aims.common.dto;
 
+import java.io.Serializable;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PageResponse<T> {
+public class PageResponse<T> implements Serializable {
     private List<T> items;
     private int page;
     private int size;

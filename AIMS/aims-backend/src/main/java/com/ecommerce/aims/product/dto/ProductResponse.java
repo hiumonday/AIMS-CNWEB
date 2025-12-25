@@ -1,15 +1,19 @@
 package com.ecommerce.aims.product.dto;
 
 import com.ecommerce.aims.product.models.ProductStatus;
-
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Map;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-public class ProductResponse {
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProductResponse implements Serializable {
     private Long id;
     private String typeCode;
     private ProductStatus status;

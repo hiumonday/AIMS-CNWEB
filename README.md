@@ -1,4 +1,4 @@
-#  Sequence Diagram – AIMS System
+#  AIMS System
 
 ## Giới thiệu
 Tài liệu này mô tả **phần công việc vẽ Sequence Diagram** của nhóm trong dự án **AIMS** – một hệ thống thương mại điện tử cho phép khách hàng đặt hàng, thanh toán trực tuyến qua các phương thức khác nhau (PayPal, VietQR...).
