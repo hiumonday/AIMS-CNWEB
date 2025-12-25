@@ -43,6 +43,10 @@ public class CartService {
         Long productId = Objects.requireNonNull(request.getProductId(), "productId must not be null");
         Integer quantity = Objects.requireNonNull(request.getQuantity(), "quantity must not be null");
         Cart cart = resolveCart(sessionKey);
+
+        if (Boolean.TRUE.equals(cart.getIsCheckedOut())) {
+            throw new BusinessException("This cart has already been used for an order. Please start a new cart.");
+        }
         ProductResponse product = productService.getProduct(productId);
 
         if (product.getStatus() == ProductStatus.DEACTIVATED) {
@@ -104,6 +108,39 @@ public class CartService {
         cart.getItems().removeIf(item -> item.getProductId().equals(id));
         cartRepository.save(cart);
         return toResponse(cart);
+    }
+
+    @Transactional
+    public void clearCart(String sessionKey) {
+        Objects.requireNonNull(sessionKey, "sessionKey must not be null");
+        cartRepository.findBySessionKey(sessionKey).ifPresent(cart -> {
+            cart.getItems().clear();
+            cart.setIsCheckedOut(false); // Reset checkout flag when cart is cleared
+            cartRepository.save(cart);
+        });
+    }
+
+    @Transactional
+    public void markAsCheckedOut(String sessionKey) {
+        Objects.requireNonNull(sessionKey, "sessionKey must not be null");
+        Cart cart = cartRepository.findBySessionKey(sessionKey)
+                .orElseThrow(() -> new BusinessException("Cart not found for session: " + sessionKey));
+        
+        if (Boolean.TRUE.equals(cart.getIsCheckedOut())) {
+            throw new BusinessException("This cart has already been used for an order. Please start a new cart.");
+        }
+        
+        cart.setIsCheckedOut(true);
+        cartRepository.save(cart);
+    }
+
+    @Transactional
+    public void resetCheckout(String sessionKey) {
+        Objects.requireNonNull(sessionKey, "sessionKey must not be null");
+        cartRepository.findBySessionKey(sessionKey).ifPresent(cart -> {
+            cart.setIsCheckedOut(false);
+            cartRepository.save(cart);
+        });
     }
 
     private void ensureStockAvailable(Integer stock, int requestedQuantity) {

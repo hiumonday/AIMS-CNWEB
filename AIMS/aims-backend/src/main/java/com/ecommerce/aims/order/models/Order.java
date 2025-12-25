@@ -41,6 +41,8 @@ public class Order {
     private String customerEmail;
     private String customerName;
 
+    private String cartSessionKey;
+
     @Embedded
     private DeliveryInfo deliveryInfo;
 

@@ -41,32 +41,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/products/**").permitAll()
-                .requestMatchers("/api/categories/**").permitAll()
-                .requestMatchers("/api/orders/**").permitAll()
-                .requestMatchers("/api/cart/**").permitAll()
-                .requestMatchers("/api/payments/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/api/docs/**", "/v3/api-docs/**").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/api/admin/users/**").hasAuthority("ADMIN")
-                .requestMatchers("/api/admin/roles/**").hasAuthority("ADMIN")
-                .requestMatchers("/api/admin/permissions/**").hasAuthority("ADMIN")
-                .requestMatchers("/api/pm/products/**").hasAnyAuthority("ADMIN", "PRODUCT_MANAGER")
-                .requestMatchers("/api/admin/products/**").hasAnyAuthority("ADMIN", "PRODUCT_MANAGER")
-                .requestMatchers("/api/admin/orders/**").hasAnyAuthority("ADMIN", "PRODUCT_MANAGER")
-                .anyRequest().authenticated()
-            )
-            .exceptionHandling(exception -> exception
-                .authenticationEntryPoint(authenticationEntryPoint)
-                .accessDeniedHandler(accessDeniedHandler)
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .httpBasic(AbstractHttpConfigurer::disable)
-            .formLogin(AbstractHttpConfigurer::disable);
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/products/**").permitAll()
+                        .requestMatchers("/api/categories/**").permitAll()
+                        .requestMatchers("/api/orders/**").permitAll()
+                        .requestMatchers("/api/cart/**").permitAll()
+                        .requestMatchers("/api/payments/**").permitAll()
+                        .requestMatchers("/api/webhooks/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/api/docs/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/api/admin/users/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/admin/roles/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/admin/permissions/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/pm/products/**").hasAnyAuthority("ADMIN", "PRODUCT_MANAGER")
+                        .requestMatchers("/api/admin/products/**").hasAnyAuthority("ADMIN", "PRODUCT_MANAGER")
+                        .requestMatchers("/api/admin/orders/**").hasAnyAuthority("ADMIN", "PRODUCT_MANAGER")
+                        .anyRequest().authenticated())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable);
 
         return http.build();
     }

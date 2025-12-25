@@ -1,5 +1,6 @@
 package com.ecommerce.aims.order.services;
 
+import com.ecommerce.aims.cart.services.CartService;
 import com.ecommerce.aims.common.dto.PageResponse;
 import com.ecommerce.aims.common.exception.BusinessException;
 import com.ecommerce.aims.common.exception.NotFoundException;
@@ -38,8 +39,9 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
-    private final IPaymentTransactionRepository IPaymentTransactionRepository;
+    private final IPaymentTransactionRepository paymentTransactionRepository;
     private final StockService stockService;
+    private final CartService cartService;
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -48,15 +50,20 @@ public class OrderService {
             throw new BusinessException("Order items must not be empty");
         }
 
+        // Prevent duplicate orders from same cart
+        if (request.getCartSessionKey() != null) {
+            cartService.markAsCheckedOut(request.getCartSessionKey());
+        }
+
         List<Long> productIds = request.getItems().stream()
-            .map(line -> Objects.requireNonNull(line.getProductId(), "productId must not be null"))
-            .distinct()
-            .sorted()
-            .collect(Collectors.toList());
+                .map(line -> Objects.requireNonNull(line.getProductId(), "productId must not be null"))
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
 
         List<Product> lockedProducts = productRepository.findAllByIdInForUpdate(productIds);
         Map<Long, Product> productMap = lockedProducts.stream()
-            .collect(Collectors.toMap(Product::getId, p -> p));
+                .collect(Collectors.toMap(Product::getId, p -> p));
 
         Map<Long, Integer> totalQuantityByProduct = new HashMap<>();
         for (var line : request.getItems()) {
@@ -68,7 +75,7 @@ public class OrderService {
             Long productId = entry.getKey();
             Integer requestedQuantity = entry.getValue();
             Product product = productMap.get(productId);
-            
+
             if (product == null) {
                 throw new NotFoundException("Product not found: " + productId);
             }
@@ -93,14 +100,15 @@ public class OrderService {
         order.setStatus(OrderStatus.PENDING_PROCESSING);
         order.setCustomerEmail(request.getCustomerEmail());
         order.setCustomerName(request.getCustomerName());
+        order.setCartSessionKey(request.getCartSessionKey());
         order.setDeliveryInfo(DeliveryInfo.builder()
-            .recipientName(request.getCustomerName())
-            .phone(request.getPhone())
-            .addressLine(request.getAddressLine())
-            .city(request.getCity())
-            .province(request.getProvince())
-            .postalCode(request.getPostalCode())
-            .build());
+                .recipientName(request.getCustomerName())
+                .phone(request.getPhone())
+                .addressLine(request.getAddressLine())
+                .city(request.getCity())
+                .province(request.getProvince())
+                .postalCode(request.getPostalCode())
+                .build());
 
         request.getItems().forEach(line -> {
             Product product = productMap.get(line.getProductId());
@@ -117,42 +125,43 @@ public class OrderService {
             order.getItems().add(item);
         });
         BigDecimal totalBeforeVat = order.getItems().stream()
-            .map(i -> i.getTotalPrice() == null ? BigDecimal.ZERO : i.getTotalPrice())
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(i -> i.getTotalPrice() == null ? BigDecimal.ZERO : i.getTotalPrice())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         order.setTotalBeforeVat(totalBeforeVat);
 
         BigDecimal totalWeight = request.getItems().stream()
-            .map(line -> {
-                Product product = productMap.get(line.getProductId());
-                BigDecimal weight = product.getWeight() == null ? BigDecimal.ZERO : product.getWeight();
-                return weight.multiply(BigDecimal.valueOf(line.getQuantity()));
-            })
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(line -> {
+                    Product product = productMap.get(line.getProductId());
+                    BigDecimal weight = product.getWeight() == null ? BigDecimal.ZERO : product.getWeight();
+                    return weight.multiply(BigDecimal.valueOf(line.getQuantity()));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal shippingFee = calculateShippingFee(totalWeight, totalBeforeVat, request.getProvince());
         order.setShippingFee(shippingFee);
         BigDecimal vatAmount = totalBeforeVat.multiply(new BigDecimal("0.10"));
-        BigDecimal totalWithVat = totalBeforeVat.add(vatAmount).add(order.getShippingFee() == null ? BigDecimal.ZERO : order.getShippingFee());
+        BigDecimal totalWithVat = totalBeforeVat.add(vatAmount)
+                .add(order.getShippingFee() == null ? BigDecimal.ZERO : order.getShippingFee());
         order.setTotalWithVat(totalWithVat);
 
         Invoice invoice = Invoice.builder()
-            .order(order)
-            .totalBeforeVat(totalBeforeVat)
-            .vatAmount(vatAmount)
-            .shippingFee(order.getShippingFee())
-            .totalWithVat(totalWithVat)
-            .build();
+                .order(order)
+                .totalBeforeVat(totalBeforeVat)
+                .vatAmount(vatAmount)
+                .shippingFee(order.getShippingFee())
+                .totalWithVat(totalWithVat)
+                .build();
         order.setInvoice(invoice);
 
         Order saved = orderRepository.save(order);
 
         PaymentTransaction transaction = PaymentTransaction.builder()
-            .orderId(saved.getId())
-            .status(PaymentStatus.INIT)
-            .amount(saved.getTotalWithVat())
-            .currency("VND")
-            .build();
-        PaymentTransaction savedTransaction = IPaymentTransactionRepository.save(transaction);
+                .orderId(saved.getId())
+                .status(PaymentStatus.INIT)
+                .amount(saved.getTotalWithVat())
+                .currency("VND")
+                .build();
+        PaymentTransaction savedTransaction = paymentTransactionRepository.save(transaction);
 
         return toResponse(saved, savedTransaction);
     }
@@ -160,8 +169,8 @@ public class OrderService {
     public OrderResponse getOrder(Long id) {
         Long requiredId = Objects.requireNonNull(id, "id must not be null");
         Order order = orderRepository.findById(requiredId)
-            .orElseThrow(() -> new NotFoundException("Order not found"));
-        PaymentTransaction transaction = IPaymentTransactionRepository.findByOrderId(order.getId()).orElse(null);
+                .orElseThrow(() -> new NotFoundException("Order not found"));
+        PaymentTransaction transaction = paymentTransactionRepository.findByOrderId(order.getId()).orElse(null);
         return toResponse(order, transaction);
     }
 
@@ -169,7 +178,7 @@ public class OrderService {
     public OrderResponse cancelOrder(Long id) {
         Long requiredId = Objects.requireNonNull(id, "id must not be null");
         Order order = orderRepository.findById(requiredId)
-            .orElseThrow(() -> new NotFoundException("Order not found"));
+                .orElseThrow(() -> new NotFoundException("Order not found"));
         if (order.getStatus() != OrderStatus.PENDING_PROCESSING && order.getStatus() != OrderStatus.PAID) {
             throw new BusinessException("Order cannot be cancelled at this stage");
         }
@@ -178,92 +187,64 @@ public class OrderService {
 
         order.setStatus(OrderStatus.CANCELLED);
         Order saved = orderRepository.save(order);
-        PaymentTransaction transaction = IPaymentTransactionRepository.findByOrderId(saved.getId()).orElse(null);
+
+        // Update payment transaction status to FAILED when order is cancelled
+        PaymentTransaction transaction = paymentTransactionRepository.findByOrderId(saved.getId()).orElse(null);
+        if (transaction != null && transaction.getStatus() != PaymentStatus.CAPTURED
+                && transaction.getStatus() != PaymentStatus.REFUNDED) {
+            transaction.setStatus(PaymentStatus.FAILED);
+            paymentTransactionRepository.save(transaction);
+        }
+
         return toResponse(saved, transaction);
     }
 
     public PageResponse<OrderResponse> listOrders(int page, int size) {
         Page<Order> pageResult = orderRepository.findAll(PageRequest.of(page, size));
         return PageResponse.<OrderResponse>builder()
-            .items(pageResult.map(this::toResponse).getContent())
-            .page(pageResult.getNumber())
-            .size(pageResult.getSize())
-            .totalElements(pageResult.getTotalElements())
-            .totalPages(pageResult.getTotalPages())
-            .build();
+                .items(pageResult.map(this::toResponse).getContent())
+                .page(pageResult.getNumber())
+                .size(pageResult.getSize())
+                .totalElements(pageResult.getTotalElements())
+                .totalPages(pageResult.getTotalPages())
+                .build();
     }
 
     private OrderResponse toResponse(Order order) {
-        PaymentTransaction transaction = IPaymentTransactionRepository.findByOrderId(order.getId()).orElse(null);
+        PaymentTransaction transaction = paymentTransactionRepository.findByOrderId(order.getId()).orElse(null);
         return toResponse(order, transaction);
     }
 
     private OrderResponse toResponse(Order order, PaymentTransaction transaction) {
         Order requiredOrder = Objects.requireNonNull(order, "order must not be null");
         return OrderResponse.builder()
-            .id(requiredOrder.getId())
-            .status(requiredOrder.getStatus())
-            .customerEmail(requiredOrder.getCustomerEmail())
-            .customerName(requiredOrder.getCustomerName())
-            .deliveryInfo(requiredOrder.getDeliveryInfo())
-            .shippingFee(requiredOrder.getShippingFee())
-            .totalBeforeVat(requiredOrder.getTotalBeforeVat())
-            .totalWithVat(requiredOrder.getTotalWithVat())
-            .createdAt(requiredOrder.getCreatedAt())
-            .items(requiredOrder.getItems().stream()
-                .map(item -> OrderResponse.OrderLine.builder()
-                    .productId(item.getProductId())
-                    .productTitle(item.getProductTitle())
-                    .quantity(item.getQuantity())
-                    .price(item.getPrice())
-                    .totalPrice(item.getTotalPrice())
-                    .build())
-                .collect(Collectors.toList()))
-            .paymentTransactionId(transaction != null ? transaction.getId() : null)
-            .paymentStatus(transaction != null ? transaction.getStatus() : null)
-            .build();
-    }
-
-    private Map<Long, Product> loadAndValidateProducts(CreateOrderRequest request) {
-        List<Long> productIds = request.getItems().stream()
-            .map(line -> Objects.requireNonNull(line.getProductId(), "productId must not be null"))
-            .distinct()
-            .sorted()
-            .collect(Collectors.toList());
-
-        List<Product> lockedProducts = productRepository.findAllByIdInForUpdate(productIds);
-        Map<Long, Product> productMap = lockedProducts.stream()
-            .collect(Collectors.toMap(Product::getId, p -> p));
-
-        Map<Long, Integer> totalQuantityByProduct = new HashMap<>();
-        for (var line : request.getItems()) {
-            Long productId = line.getProductId();
-            totalQuantityByProduct.merge(productId, line.getQuantity(), Integer::sum);
-        }
-
-        for (var entry : totalQuantityByProduct.entrySet()) {
-            Long productId = entry.getKey();
-            Integer requestedQuantity = entry.getValue();
-            Product product = productMap.get(productId);
-            
-            if (product == null) {
-                throw new NotFoundException("Product not found: " + productId);
-            }
-            if (product.getStatus() == ProductStatus.DEACTIVATED) {
-                throw new BusinessException("Product is deactivated: " + product.getTitle());
-            }
-            int availableStock = product.getStock() == null ? 0 : product.getStock();
-            if (availableStock < requestedQuantity) {
-                throw new OutOfStockException(product.getTitle(), productId, requestedQuantity, availableStock);
-            }
-        }
-
-        return productMap;
+                .id(requiredOrder.getId())
+                .status(requiredOrder.getStatus())
+                .customerEmail(requiredOrder.getCustomerEmail())
+                .customerName(requiredOrder.getCustomerName())
+                .deliveryInfo(requiredOrder.getDeliveryInfo())
+                .shippingFee(requiredOrder.getShippingFee())
+                .totalBeforeVat(requiredOrder.getTotalBeforeVat())
+                .totalWithVat(requiredOrder.getTotalWithVat())
+                .createdAt(requiredOrder.getCreatedAt())
+                .items(requiredOrder.getItems().stream()
+                        .map(item -> OrderResponse.OrderLine.builder()
+                                .productId(item.getProductId())
+                                .productTitle(item.getProductTitle())
+                                .quantity(item.getQuantity())
+                                .price(item.getPrice())
+                                .totalPrice(item.getTotalPrice())
+                                .build())
+                        .collect(Collectors.toList()))
+                .paymentTransactionId(transaction != null ? transaction.getId() : null)
+                .paymentStatus(transaction != null ? transaction.getStatus() : null)
+                .build();
     }
 
     private BigDecimal calculateShippingFee(BigDecimal totalWeight, BigDecimal totalProductPrice, String province) {
         BigDecimal weight = totalWeight == null || totalWeight.signum() < 0 ? BigDecimal.ZERO : totalWeight;
-        boolean bigCity = province != null && province.trim().toLowerCase().matches(".*(ha noi|hanoi|ho chi minh|hochiminh|hcm).*");
+        boolean bigCity = province != null
+                && province.trim().toLowerCase().matches(".*(ha noi|hanoi|ho chi minh|hochiminh|hcm).*");
         BigDecimal baseWeight = bigCity ? new BigDecimal("3.0") : new BigDecimal("0.5");
         BigDecimal basePrice = bigCity ? new BigDecimal("22000") : new BigDecimal("30000");
         BigDecimal result = basePrice;
