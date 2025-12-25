@@ -14,4 +14,6 @@
     <include file="db/changelog/add-image-changelog.xml" />
     <include file="db/changelog/add-payment-attribute-changelog.xml" />
     <include file="db/changelog/seed-image-product-data.xml" />
+    <include file="db/changelog/add-session-key.xml"/>
+    <include file="db/changelog/cart-checkout-dedup.xml"/>
 </databaseChangeLog>
