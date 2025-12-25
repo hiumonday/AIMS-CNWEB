@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://ep-jolly-star-a1zh7afu-pooler.ap-southeast-1.aws.neon.tech/neondb?user=neondb_owner&password=npg_5rklECB6cLQp&sslmode=require&channelBinding=require
+    username: postgres
+    password: matkhau_moi
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  liquibase:
+    contexts: dev
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:aims.jsc34@gmail.com}
+    password: ${MAIL_PASSWORD:krlubklvareizrfj}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+server:
+  port: 8000
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.springframework.security: INFO
+
+management:
+  health:
+    mail:
+      enabled: false
