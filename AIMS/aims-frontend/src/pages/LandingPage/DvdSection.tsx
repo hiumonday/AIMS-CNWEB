@@ -49,7 +49,7 @@ const DvdSection: FC<LandingSectionProps> = ({ style, heroStyle, scrollHint }) =
 
           <h1 className="cinematic-title">
             Cinema <br />
-            <span className="text-highlight">At Home</span>
+            At <span className="text-highlight">Home</span>
           </h1>
 
           <p className="cinematic-desc">

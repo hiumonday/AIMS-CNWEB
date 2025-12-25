@@ -37,10 +37,6 @@ public class PaymentTransactionRepository {
         return paymentTransactionRepository.findTopByOrderIdOrderByCreatedAtDesc(orderId);
     }
 
-    public Optional<PaymentTransaction> findByOrderId(Long orderId) {
-        return paymentTransactionRepository.findByOrderId(orderId);
-    }
-
     public boolean existsById(Long id) {
         return paymentTransactionRepository.existsById(id);
     }

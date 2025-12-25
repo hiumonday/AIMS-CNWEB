@@ -34,6 +34,8 @@ export interface Order {
   province: string;
   postalCode: string;
   shippingFee: number;
+  totalBeforeVat?: number;
+  totalWithVat?: number;
   subtotal?: number;
   total?: number;
   status?: string;

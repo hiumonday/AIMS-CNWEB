@@ -76,7 +76,7 @@ public class OrderExpirationScheduler {
                 orderPaymentService.handlePaymentTimeout(order.getId());
 
                 // Mark payment transaction as FAILED if not already updated
-                paymentTransactionRepository.findByOrderId(order.getId()).ifPresent(transaction -> {
+                paymentTransactionRepository.findTopByOrderIdOrderByCreatedAtDesc(order.getId()).ifPresent(transaction -> {
                     if (transaction.getStatus() == PaymentStatus.INIT) {
                         transaction.setStatus(PaymentStatus.FAILED);
                         paymentTransactionRepository.save(transaction);
@@ -106,9 +106,13 @@ public class OrderExpirationScheduler {
         List<Order> oldCancelledOrders = orderRepository.findByStatusAndUpdatedAtBefore(
                 OrderStatus.CANCELLED,
                 threshold);
+        List<Order> oldFailedOrders = orderRepository.findByStatusAndUpdatedAtBefore(
+                OrderStatus.FAILED,
+                threshold);
+        int totalOldOrders = oldCancelledOrders.size() + oldFailedOrders.size();
 
-        if (!oldCancelledOrders.isEmpty()) {
-            log.info("Found {} old cancelled orders to clean up", oldCancelledOrders.size());
+        if (totalOldOrders > 0) {
+            log.info("Found {} old failed/cancelled orders to clean up", totalOldOrders);
             // Option 1: Archive to separate table (recommended)
             // Option 2: Delete (use with caution)
             // orderRepository.deleteAll(oldCancelledOrders);

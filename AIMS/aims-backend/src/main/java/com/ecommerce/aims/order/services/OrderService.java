@@ -182,7 +182,7 @@ public class OrderService {
 
         stockService.restoreStockWithLocking(order.getItems());
 
-        order.setStatus(OrderStatus.CANCELLED);
+        order.setStatus(OrderStatus.FAILED);
         Order saved = orderRepository.save(order);
 
         // Reset cart checkout flag so user can reuse the same cart
@@ -191,7 +191,9 @@ public class OrderService {
         }
 
         // Update payment transaction status to FAILED when order is cancelled
-        PaymentTransaction transaction = paymentTransactionRepository.findByOrderId(saved.getId()).orElse(null);
+        PaymentTransaction transaction = paymentTransactionRepository
+                .findTopByOrderIdOrderByCreatedAtDesc(saved.getId())
+                .orElse(null);
         if (transaction != null && transaction.getStatus() != PaymentStatus.CAPTURED
                 && transaction.getStatus() != PaymentStatus.REFUNDED) {
             transaction.setStatus(PaymentStatus.FAILED);
@@ -213,7 +215,9 @@ public class OrderService {
     }
 
     private OrderResponse toResponse(Order order) {
-        PaymentTransaction transaction = paymentTransactionRepository.findByOrderId(order.getId()).orElse(null);
+        PaymentTransaction transaction = paymentTransactionRepository
+                .findTopByOrderIdOrderByCreatedAtDesc(order.getId())
+                .orElse(null);
         return toResponse(order, transaction);
     }
 

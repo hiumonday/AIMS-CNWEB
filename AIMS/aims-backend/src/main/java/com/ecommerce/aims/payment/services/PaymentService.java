@@ -10,6 +10,7 @@ import com.ecommerce.aims.payment.models.PaymentProvider;
 import com.ecommerce.aims.payment.models.PaymentStatus;
 import com.ecommerce.aims.payment.models.PaymentTransaction;
 import com.ecommerce.aims.payment.repository.IPaymentTransactionRepository;
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -37,8 +38,17 @@ public class PaymentService {
         Long orderId = Objects.requireNonNull(request.getOrderId(), "orderId must not be null");
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found"));
-        if (request.getAmount() == null) {
-            request.setAmount(order.getTotalWithVat());
+        BigDecimal totalBeforeVat = order.getTotalBeforeVat() != null ? order.getTotalBeforeVat() : BigDecimal.ZERO;
+        BigDecimal shippingFee = order.getShippingFee() != null ? order.getShippingFee() : BigDecimal.ZERO;
+        BigDecimal vatAmount = totalBeforeVat.multiply(new BigDecimal("0.10"));
+        BigDecimal totalWithVat = order.getTotalWithVat();
+        if (totalWithVat == null) {
+            totalWithVat = totalBeforeVat.add(vatAmount).add(shippingFee);
+            order.setTotalWithVat(totalWithVat);
+            orderRepository.save(order);
+        }
+        if (request.getProvider() == PaymentProvider.VIETQR || request.getAmount() == null) {
+            request.setAmount(totalWithVat);
         }
         PaymentTransaction transaction = Objects.requireNonNull(PaymentTransaction.builder()
                 .orderId(orderId)
