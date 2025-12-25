@@ -18,7 +18,8 @@ export type Product = {
   genre: string;
   price: number; // exclude VAT
   stock: number;
-  imageUrl: string;
+  image?: string;
+  imageUrl?: string;
   shortDesc: string;
   typeCode?: ProductTypeCode;
   status?: ProductStatus;

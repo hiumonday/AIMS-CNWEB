@@ -1,0 +1,74 @@
+services:
+  # Backend Service
+  backend:
+    platform: linux/amd64
+    build:
+      context: ./aims-backend
+      dockerfile: Dockerfile
+    container_name: aims-backend
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - ./aims-backend/.env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/aims
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-huygdo}
+      SPRING_DATASOURCE_PASSWORD:
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8000/actuator/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - aims-network
+    restart: unless-stopped
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./aims-frontend
+      dockerfile: Dockerfile
+    container_name: aims-frontend
+    ports:
+      - "0.0.0.0:8001:4173"
+    environment:
+      VITE_API_BASE_URL: https://aims-backend-latest.onrender.com/api
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:4173",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - aims-network
+    restart: unless-stopped
+
+networks:
+  aims-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

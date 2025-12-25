@@ -6,3 +6,4 @@
 *.tmp
 ### IntelliJ IDEA ###
 +.idea
+application*.yml

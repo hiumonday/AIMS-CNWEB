@@ -1,0 +1,27 @@
+# Backend
+aims-backend/target/
+aims-backend/.mvn/
+aims-backend/mvnw
+aims-backend/mvnw.cmd
+
+# Frontend
+aims-frontend/node_modules/
+aims-frontend/dist/
+aims-frontend/.env
+aims-frontend/.env.local
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

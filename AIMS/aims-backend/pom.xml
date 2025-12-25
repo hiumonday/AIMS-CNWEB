@@ -19,6 +19,7 @@
         <java.version>17</java.version>
         <springdoc.version>2.3.0</springdoc.version>
         <jjwt.version>0.13.0</jjwt.version>
+        <postgresql.version>42.6.2</postgresql.version>
     </properties>
 
     <dependencies>
@@ -62,6 +63,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -141,6 +143,7 @@
                     <dependency>
                         <groupId>org.postgresql</groupId>
                         <artifactId>postgresql</artifactId>
+                        <version>${postgresql.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>
