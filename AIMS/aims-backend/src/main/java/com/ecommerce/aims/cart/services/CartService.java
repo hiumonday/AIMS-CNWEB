@@ -52,7 +52,6 @@ public class CartService {
         if (product.getStatus() == ProductStatus.DEACTIVATED) {
             throw new BusinessException("Product is not available");
         }
-        ensureStockAvailable(product.getStock(), quantity);
         Optional<CartItem> existing = cart.getItems().stream()
                 .filter(item -> item.getProductId().equals(productId))
                 .findFirst();
@@ -63,7 +62,10 @@ public class CartService {
             cart.getItems().add(created);
             return created;
         });
-        item.setQuantity(quantity);
+
+        int newQuantity = existing.isPresent() ? item.getQuantity() + quantity : quantity;
+        ensureStockAvailable(product.getStock(), newQuantity);
+        item.setQuantity(newQuantity);
         BigDecimal price = Optional.ofNullable(product.getCurrentPrice()).orElse(request.getPrice());
         if (price == null) {
             throw new BusinessException("Price must be provided when product has no current price");
@@ -125,11 +127,11 @@ public class CartService {
         Objects.requireNonNull(sessionKey, "sessionKey must not be null");
         Cart cart = cartRepository.findBySessionKey(sessionKey)
                 .orElseThrow(() -> new BusinessException("Cart not found for session: " + sessionKey));
-        
+
         if (Boolean.TRUE.equals(cart.getIsCheckedOut())) {
             throw new BusinessException("This cart has already been used for an order. Please start a new cart.");
         }
-        
+
         cart.setIsCheckedOut(true);
         cartRepository.save(cart);
     }
