@@ -132,7 +132,7 @@ const NewspaperSection: FC<LandingSectionProps> = ({
         </div>
 
         <div className={`np-actions ${expandedIndex !== null ? 'fade-out' : ''}`}>
-          <Link className="np-btn-read" to={`/products?query=${newspaperTheme.searchKey}`}>
+          <Link className="np-btn-read" to={`/products?category=Newspaper`}>
             Đọc báo ngay
           </Link>
         </div>

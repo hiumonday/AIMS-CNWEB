@@ -69,7 +69,7 @@ const DvdSection: FC<LandingSectionProps> = ({ style, heroStyle, scrollHint }) =
           <div className="cinema-actions">
             <Link
               className="btn-magnetic primary"
-              to={`/products?query=${dvdTheme.searchKey ?? 'DVD'}`}
+              to={`/products?category=DVD`}
             >
               <span>Khám phá ngay</span>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
