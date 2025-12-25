@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import vn.payos.PayOS;
+import vn.payos.model.webhooks.Webhook;
+import vn.payos.model.webhooks.WebhookData;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
 import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 import vn.payos.model.v2.paymentRequests.PaymentLink;
@@ -67,6 +69,31 @@ public class VietQRClient {
         }
     }
 
+    public PaymentLink cancelPaymentLink(Long orderCode, String cancellationReason) {
+        try {
+            return payOS.paymentRequests().cancel(orderCode, cancellationReason);
+        } catch (Exception e) {
+            throw new BusinessException("PayOS cancel payment link error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Verify webhook signature using PayOS SDK.
+     * Internally uses HMAC-SHA256 with checksumKey to verify data integrity.
+     * 
+     * @param webhook The webhook object from PayOS
+     * @return Verified WebhookData if signature is valid
+     * @throws BusinessException if signature verification fails
+     */
+    public WebhookData verifyWebhook(Webhook webhook) {
+        Objects.requireNonNull(webhook, "webhook must not be null");
+        try {
+            return payOS.webhooks().verify(webhook);
+        } catch (Exception e) {
+            throw new BusinessException("PayOS webhook signature verification failed: " + e.getMessage());
+        }
+    }
+
     public VietQrCreateResponse createQr(Long orderId, BigDecimal amount, String description) {
         try {
             VietQrCreateRequest payload = new VietQrCreateRequest();
@@ -78,14 +105,16 @@ public class VietQRClient {
             String raw = webClientBuilder.build()
                     .post()
                     .uri(buildGenerateUrl())
-                    .header("x-client-id", Objects.requireNonNull(properties.getClientId(), "clientId must not be null"))
+                    .header("x-client-id",
+                            Objects.requireNonNull(properties.getClientId(), "clientId must not be null"))
                     .header("x-api-key", Objects.requireNonNull(properties.getApiKey(), "apiKey must not be null"))
                     .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON, "mediaType must not be null"))
                     .bodyValue(Objects.requireNonNull(payload, "payload must not be null"))
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, resp -> resp.bodyToMono(String.class)
-                        .defaultIfEmpty("no-body")
-                        .map(body -> (Throwable) new BusinessException("VietQR create error: http " + resp.statusCode() + " - " + body)))
+                            .defaultIfEmpty("no-body")
+                            .map(body -> (Throwable) new BusinessException(
+                                    "VietQR create error: http " + resp.statusCode() + " - " + body)))
                     .bodyToMono(String.class)
                     .block();
 

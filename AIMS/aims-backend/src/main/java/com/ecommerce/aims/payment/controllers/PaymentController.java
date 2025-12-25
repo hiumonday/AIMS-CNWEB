@@ -25,12 +25,13 @@ public class PaymentController {
 
     @PostMapping
     public ApiResponse<PaymentResultResponse> createPayment(@Valid @RequestBody CreatePaymentRequest request) {
+        System.out.println(">>> CREATE PAYMENT REQUEST: " + request);
         return ApiResponse.success(paymentService.createPayment(request), "Payment initiated");
     }
 
     @PostMapping("/{id}/capture")
     public ApiResponse<PaymentResultResponse> capture(@PathVariable Long id,
-                                                      @RequestParam(required = false) String providerReference) {
+            @RequestParam(required = false) String providerReference) {
         return ApiResponse.success(paymentService.markCaptured(id, providerReference), "Payment captured");
     }
 
@@ -38,5 +39,12 @@ public class PaymentController {
     public ApiResponse<PaymentResultResponse> refund(@PathVariable Long id, @Valid @RequestBody RefundRequest request) {
         request.setTransactionId(id);
         return ApiResponse.success(refundService.refund(request), "Refund processed");
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ApiResponse<PaymentResultResponse> cancel(@PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String reason = body != null ? body.get("reason") : null;
+        return ApiResponse.success(paymentService.cancelTransaction(id, reason), "Transaction cancelled");
     }
 }

@@ -14,17 +14,20 @@ public class PayPalService {
     private final PayPalClient payPalClient;
 
     public PaymentResultResponse initiatePayment(PaymentTransaction transaction, CreatePaymentRequest request) {
-        PayPalClient.PayPalOrderResponse response = payPalClient.createOrder(request.getAmount(), request.getCurrency(), request.getSuccessReturnUrl(), request.getCancelReturnUrl());
+        PayPalClient.PayPalOrderResponse response = payPalClient.createOrder(request.getAmount(), request.getCurrency(),
+                request.getSuccessReturnUrl(), request.getCancelReturnUrl());
         transaction.setProviderReference(response.getId());
         String approvalUrl = response.getApprovalLink();
         String captureUrl = response.getCaptureLink();
         return PaymentResultResponse.builder()
-            .transactionId(transaction.getId())
-            .status(PaymentStatus.INIT)
-            .approvalUrl(approvalUrl)
-            .captureUrl(captureUrl != null ? captureUrl : String.format("%s/v2/checkout/orders/%s/capture", payPalClient.getBaseUrlForDocs(), response.getId()))
-            .providerReference(transaction.getProviderReference())
-            .build();
+                .transactionId(transaction.getId())
+                .status(PaymentStatus.INIT)
+                .approvalUrl(approvalUrl)
+                .captureUrl(captureUrl != null ? captureUrl
+                        : String.format("%s/v2/checkout/orders/%s/capture", payPalClient.getBaseUrlForDocs(),
+                                response.getId()))
+                .providerReference(transaction.getProviderReference())
+                .build();
     }
 
     public PaymentResultResponse capture(String orderId, PaymentTransaction transaction) {
@@ -32,10 +35,10 @@ public class PayPalService {
         transaction.setCaptureId(response.getId());
         transaction.setStatus(PaymentStatus.CAPTURED);
         return PaymentResultResponse.builder()
-            .transactionId(transaction.getId())
-            .status(transaction.getStatus())
-            .providerReference(response.getId())
-            .build();
+                .transactionId(transaction.getId())
+                .status(transaction.getStatus())
+                .providerReference(response.getId())
+                .build();
     }
 
     public void refund(String captureId, java.math.BigDecimal amount, String currency, PaymentTransaction transaction) {

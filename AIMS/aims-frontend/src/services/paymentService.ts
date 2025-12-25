@@ -15,7 +15,8 @@ export interface CreatePaymentRequest {
 }
 
 export interface Payment {
-  id: number;
+  id: number; // Might be undefined if backend sends transactionId
+  transactionId?: number; // Backend sends this
   orderId: number;
   provider: PaymentProvider;
   amount: number;
@@ -23,6 +24,7 @@ export interface Payment {
   status?: string;
   providerReference?: string;
   approvalUrl?: string; // PayPal redirect URL
+  qrContent?: string; // VietQR content
   createdAt?: string;
   updatedAt?: string;
 }

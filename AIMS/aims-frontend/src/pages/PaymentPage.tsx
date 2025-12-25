@@ -80,8 +80,8 @@ const PaymentPage = () => {
         setPaymentStatus(null);
         setQrImageError(false);
         try {
-          // Use the new VietQR endpoint
-          const payment = await paymentService.createVietQRPayment({
+          // Use the unified createPayment endpoint
+          const payment = await paymentService.createPayment({
             orderId,
             provider: "VIETQR",
             amount: calculatedTotal,
@@ -90,19 +90,16 @@ const PaymentPage = () => {
             cancelReturnUrl: `${window.location.origin}/payment/cancel`,
           });
 
-          const qrString = payment.qrContent || payment.qrCode;
-          const qrImg = payment.qrImage;
+          const qrString = payment.qrContent;
           if (qrString) {
             setQrCodeUrl(qrString);
-          } else if (qrImg) {
-            const cleaned = qrImg
-              .replace(/^data:image\/[a-zA-Z]+;base64,/, "")
-              .replace(/\s/g, "");
-            const prefixed = `data:image/png;base64,${cleaned}`;
-            setQrCodeUrl(prefixed);
           }
-          if (payment.paymentLinkId) {
-            setPaymentLinkId(payment.paymentLinkId);
+          if (payment.providerReference) {
+            setPaymentLinkId(payment.providerReference);
+          }
+          // Fallback if transactionId is mapped to id by some middleware, but usually backend sends transactionId
+          if (payment.transactionId) {
+            // If we need transactionId for anything else
           }
         } catch (error) {
           console.error("Failed to create VietQR payment:", error);

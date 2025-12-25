@@ -35,7 +35,8 @@ public class PaymentWebhookController {
     @PostMapping("/payos")
     public ResponseEntity<Map<String, String>> handlePayOSWebhook(@RequestBody Map<String, Object> payload) {
         vietQRService.handleWebhook(payload);
-        System.out.println(payload);
         return ResponseEntity.ok(Map.of("status", "ok"));
     }
 }
+
+        // 

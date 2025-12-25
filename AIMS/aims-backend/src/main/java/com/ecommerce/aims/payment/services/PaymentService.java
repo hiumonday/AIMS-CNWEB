@@ -31,7 +31,7 @@ public class PaymentService {
     private final EmailNotificationService emailNotificationService;
     private final OrderPaymentService orderPaymentService;
 
-    @Transactional
+    @Transactional(noRollbackFor = com.ecommerce.aims.common.exception.BusinessException.class)
     public PaymentResultResponse createPayment(CreatePaymentRequest request) {
         Objects.requireNonNull(request, "request must not be null");
         Long orderId = Objects.requireNonNull(request.getOrderId(), "orderId must not be null");
@@ -49,20 +49,29 @@ public class PaymentService {
                 .providerReference(UUID.randomUUID().toString())
                 .build());
         PaymentTransaction saved = IPaymentTransactionRepository.save(transaction);
+
         PaymentResultResponse response;
-        // SOLID: Provider branching here means adding a new provider requires editing
-        // this method (OCP).
-        if (request.getProvider() == PaymentProvider.PAYPAL) {
-            response = payPalService.initiatePayment(saved, request);
-        } else if (request.getProvider() == PaymentProvider.VIETQR) {
-            response = vietQRService.generateQr(saved, request);
-        } else {
-            response = PaymentResultResponse.builder()
-                    .transactionId(saved.getId())
-                    .status(saved.getStatus())
-                    .providerReference(saved.getProviderReference())
-                    .build();
+        try {
+            // SOLID: Provider branching here means adding a new provider requires editing
+            // this method (OCP).
+            if (request.getProvider() == PaymentProvider.PAYPAL) {
+                response = payPalService.initiatePayment(saved, request);
+            } else if (request.getProvider() == PaymentProvider.VIETQR) {
+                response = vietQRService.generateQr(saved, request);
+            } else {
+                response = PaymentResultResponse.builder()
+                        .transactionId(saved.getId())
+                        .status(saved.getStatus())
+                        .providerReference(saved.getProviderReference())
+                        .build();
+            }
+        } catch (Exception e) {
+            // Update status to FAILED and persist before re-throwing
+            saved.setStatus(PaymentStatus.FAILED);
+            IPaymentTransactionRepository.save(saved);
+            throw e;
         }
+
         IPaymentTransactionRepository.save(saved);
         return response;
     }
@@ -70,8 +79,10 @@ public class PaymentService {
     @Transactional
     public PaymentResultResponse markCaptured(Long transactionId, String providerReference) {
         Long id = Objects.requireNonNull(transactionId, "transactionId must not be null");
+
         PaymentTransaction transaction = IPaymentTransactionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Transaction not found"));
+
         if (providerReference != null) {
             transaction.setProviderReference(providerReference);
             transaction.setCaptureId(providerReference);
@@ -95,11 +106,6 @@ public class PaymentService {
 
         // Use OrderPaymentService for robust order handling (stock, cart, etc.)
         orderPaymentService.handlePaymentCaptured(transaction.getOrderId());
-
-        // Send email notification
-        // Note: OrderPaymentService saves the order, so we can retrieve it or trust it
-        // exists
-        emailNotificationService.sendEmail(transaction.getOrderId(), transaction.getId());
 
         return response;
     }
@@ -132,4 +138,33 @@ public class PaymentService {
         }
     }
 
+    @Transactional
+    public PaymentResultResponse cancelTransaction(Long transactionId, String reason) {
+        PaymentTransaction transaction = IPaymentTransactionRepository.findById(transactionId)
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
+
+        if (transaction.getStatus() == PaymentStatus.CAPTURED) {
+            throw new com.ecommerce.aims.common.exception.BusinessException("Cannot cancel captured transaction");
+        }
+
+        if (transaction.getProvider() == PaymentProvider.VIETQR) {
+            try {
+                // Cancel on PayOS
+                vietQRService.cancelPaymentLink(transaction.getId(), reason != null ? reason : "User cancelled");
+            } catch (Exception e) {
+                System.err.println("Failed to cancel PayOS link: " + e.getMessage());
+                // Continue to cancel local transaction even if PayOS fails (link might strictly
+                // expire)
+            }
+        }
+
+        transaction.setStatus(PaymentStatus.FAILED);
+
+        IPaymentTransactionRepository.save(transaction);
+
+        return PaymentResultResponse.builder()
+                .transactionId(transaction.getId())
+                .status(transaction.getStatus())
+                .build();
+    }
 }

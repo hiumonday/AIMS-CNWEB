@@ -19,7 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RefundService {
 
-    // SOLID: This service currently mixes payment refund logic and order status updates.
+    // SOLID: This service currently mixes payment refund logic and order status
+    // updates.
     private final IPaymentTransactionRepository IPaymentTransactionRepository;
     private final PayPalService payPalService;
     private final OrderRepository orderRepository;
@@ -29,26 +30,30 @@ public class RefundService {
         Objects.requireNonNull(request, "request must not be null");
         Long transactionId = Objects.requireNonNull(request.getTransactionId(), "transactionId must not be null");
         PaymentTransaction transaction = IPaymentTransactionRepository.findById(transactionId)
-            .orElseThrow(() -> new NotFoundException("Transaction not found"));
+                .orElseThrow(() -> new NotFoundException("Transaction not found"));
         java.math.BigDecimal refundAmount = request.getAmount() != null ? request.getAmount() : transaction.getAmount();
-        // SOLID: Provider-specific branching means adding another refund provider edits this method (OCP).
+        // SOLID: Provider-specific branching means adding another refund provider edits
+        // this method (OCP).
         if (transaction.getProvider() == PaymentProvider.PAYPAL) {
-            String captureId = transaction.getCaptureId() != null ? transaction.getCaptureId() : transaction.getProviderReference();
+            String captureId = transaction.getCaptureId() != null ? transaction.getCaptureId()
+                    : transaction.getProviderReference();
             payPalService.refund(captureId, refundAmount, transaction.getCurrency(), transaction);
         }
-        boolean fullRefund = refundAmount != null && transaction.getAmount() != null && refundAmount.compareTo(transaction.getAmount()) >= 0;
+        boolean fullRefund = refundAmount != null && transaction.getAmount() != null
+                && refundAmount.compareTo(transaction.getAmount()) >= 0;
         transaction.setStatus(fullRefund ? PaymentStatus.REFUNDED : PaymentStatus.CAPTURED);
         IPaymentTransactionRepository.save(transaction);
         updateOrderRefunded(transaction.getOrderId(), fullRefund);
         return PaymentResultResponse.builder()
-            .transactionId(transaction.getId())
-            .status(transaction.getStatus())
-            .providerReference(transaction.getProviderReference())
-            .build();
+                .transactionId(transaction.getId())
+                .status(transaction.getStatus())
+                .providerReference(transaction.getProviderReference())
+                .build();
     }
 
     private void updateOrderRefunded(Long orderId, boolean fullRefund) {
-        // SOLID: Order status changes are embedded here; consider moving to order domain service.
+        // SOLID: Order status changes are embedded here; consider moving to order
+        // domain service.
         if (orderId == null) {
             return;
         }

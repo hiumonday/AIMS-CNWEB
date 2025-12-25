@@ -18,6 +18,14 @@ public class VietQRService {
 
     private final VietQRClient vietQRClient;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private PaymentService paymentService;
+
+    private final com.ecommerce.aims.notification.services.EmailNotificationService emailNotificationService;
+    private final com.ecommerce.aims.order.repository.OrderRepository orderRepository;
+    private final com.ecommerce.aims.payment.repository.IPaymentTransactionRepository paymentTransactionRepository;
+
     public CreatePaymentLinkResponse createPaymentLink(CreatePaymentRequest request) {
         Long orderCode = System.currentTimeMillis() / 1000;
 
@@ -66,6 +74,10 @@ public class VietQRService {
         return vietQRClient.getPaymentLinkStatus(id);
     }
 
+    public vn.payos.model.v2.paymentRequests.PaymentLink cancelPaymentLink(Long orderCode, String cancellationReason) {
+        return vietQRClient.cancelPaymentLink(orderCode, cancellationReason);
+    }
+
     private PaymentStatus mapStatus(PaymentLinkStatus status) {
         // SOLID: Mapping is hardcoded; new gateway statuses require code changes (OCP).
         return switch (status) {
@@ -75,33 +87,90 @@ public class VietQRService {
         };
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
-    @org.springframework.context.annotation.Lazy
-    private PaymentService paymentService;
-
+    /**
+     * Handle PayOS webhook with signature verification using PayOS SDK.
+     * The SDK internally verifies the HMAC-SHA256 signature to ensure data
+     * integrity.
+     */
     public void handleWebhook(java.util.Map<String, Object> payload) {
-        if (payload == null)
+        if (payload == null) {
             return;
-        Object dataObj = payload.get("data");
-        if (!(dataObj instanceof java.util.Map))
-            return;
-        java.util.Map<?, ?> data = (java.util.Map<?, ?>) dataObj;
-
-        String code = (String) payload.get("code");
-        if (!"00".equals(code))
-            return;
-
-        Object orderCodeObj = data.get("orderCode");
-        if (orderCodeObj == null)
-            return;
+        }
 
         try {
-            Long transactionId = Long.valueOf(orderCodeObj.toString());
-            paymentService.markCaptured(transactionId, null);
-        } catch (NumberFormatException e) {
-            System.err.println("Invalid order code format: " + orderCodeObj);
-        } catch (Exception e) { // Catch NotFoundException and others
-            System.err.println("Webhook processing failed: " + e.getMessage());
+            // Verify and extract webhook data
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+
+            vn.payos.model.webhooks.WebhookData webhook = mapper.convertValue(payload.get("data"),
+                    vn.payos.model.webhooks.WebhookData.class);
+            String signature = (String) payload.get("signature");
+
+            // Reconstruct the full webhook structure for verification
+            vn.payos.model.webhooks.WebhookData receivedWebhook = new vn.payos.model.webhooks.WebhookData(
+                    webhook.getOrderCode(),
+                    webhook.getAmount(),
+                    webhook.getDescription(),
+                    webhook.getAccountNumber(),
+                    webhook.getReference(),
+                    webhook.getTransactionDateTime(),
+                    webhook.getCurrency(),
+                    webhook.getPaymentLinkId(),
+                    webhook.getCode(),
+                    webhook.getDesc(),
+                    webhook.getCounterAccountBankId(),
+                    webhook.getCounterAccountBankName(),
+                    webhook.getCounterAccountName(),
+                    webhook.getCounterAccountNumber(),
+                    webhook.getVirtualAccountName(),
+                    webhook.getVirtualAccountNumber());
+
+            vn.payos.model.webhooks.Webhook verifiedWebhook = new vn.payos.model.webhooks.Webhook();
+            verifiedWebhook.setCode(webhook.getCode());
+            verifiedWebhook.setDesc(webhook.getDesc());
+            verifiedWebhook.setData(receivedWebhook);
+            verifiedWebhook.setSignature(signature);
+
+            vn.payos.model.webhooks.WebhookData verifiedData = vietQRClient.verifyWebhook(verifiedWebhook);
+
+            if (verifiedData == null || verifiedData.getOrderCode() == null) {
+                throw new com.ecommerce.aims.common.exception.BusinessException(
+                        "Invalid webhook data or missing order code");
+            }
+
+            Long transactionId = verifiedData.getOrderCode();
+            System.out.println(">>> RECEIVED WEBHOOK for OrderCode: " + transactionId);
+            System.out.println(">>> Verified Data: " + verifiedData);
+
+            // Mark transaction as captured
+            com.ecommerce.aims.payment.dto.PaymentResultResponse response = paymentService.markCaptured(transactionId,
+                    null);
+
+            // Send email specifically for VietQR payments
+            try {
+                PaymentTransaction transaction = paymentTransactionRepository
+                        .findById(response.getTransactionId())
+                        .orElse(null);
+
+                if (transaction != null) {
+                    com.ecommerce.aims.order.models.Order order = orderRepository.findById(transaction.getOrderId())
+                            .orElse(null);
+                    if (order != null) {
+                        emailNotificationService.sendPaymentSuccessEmail(order, transaction);
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to send VietQR success email: " + e.getMessage());
+                // Do not throw, keep transaction success
+            }
+
+        } catch (com.ecommerce.aims.common.exception.BusinessException e) {
+            System.err.println("Webhook verification failed: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.err.println("Unexpected error processing webhook: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Webhook processing failed: " + e.getMessage());
         }
     }
 }
