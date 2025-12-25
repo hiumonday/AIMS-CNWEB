@@ -10,8 +10,4 @@
             <column name="is_checked_out" type="BOOLEAN"/>
         </addColumn>
     </changeSet>
-    <changeSet id="1766641852570-2" author="huygdo">
-        <addNotNullConstraint columnName="is_checked_out" tableName="carts"/>
-    </changeSet>
-
 </databaseChangeLog>
