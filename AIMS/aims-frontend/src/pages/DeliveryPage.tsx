@@ -2,14 +2,17 @@ import { useMemo, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Checkout.css";
 import { useCart } from "../context/CartContext";
+import { useToast } from "../context/ToastContext";
 import type { DeliveryInfo } from "../types";
 import orderService from "../services/orderService";
+import cartService from "../services/cartService";
 
 const baseDeliveryFee = 10;
 
 const DeliveryPage = () => {
   const navigate = useNavigate();
   const { subtotal, lines } = useCart();
+  const { showToast } = useToast();
   const [form, setForm] = useState<DeliveryInfo>(() => {
     const saved = localStorage.getItem("deliveryInfo");
     const defaults = {
@@ -61,6 +64,9 @@ const DeliveryPage = () => {
     setIsCreatingOrder(true);
 
     try {
+      // Get cart session key
+      const sessionKey = cartService.getSessionKey();
+
       // Create order with delivery info and cart items
       const order = await orderService.createOrder({
         customerEmail: form.email,
@@ -70,6 +76,7 @@ const DeliveryPage = () => {
         city: form.city,
         province: form.state,
         postalCode: "00000", // TODO: Add postal code field if needed
+        cartSessionKey: sessionKey,
         shippingFee: deliveryFee,
         items: lines.map((line) => ({
           productId: Number(line.productId),
@@ -91,9 +98,32 @@ const DeliveryPage = () => {
           total,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to create order:", error);
-      alert("Failed to create order. Please try again.");
+
+      // Check if it's a duplicate order error (cart already checked out)
+      const errorMessage =
+        error?.response?.data?.message || error?.message || "";
+
+      if (
+        errorMessage.includes("already been used for an order") ||
+        errorMessage.includes("already checked out")
+      ) {
+        showToast(
+          "You have a pending order with this cart. Please complete or cancel your existing order before creating a new one.",
+          "warning"
+        );
+      } else if (
+        errorMessage.includes("out of stock") ||
+        errorMessage.includes("Insufficient stock")
+      ) {
+        showToast(
+          "Some items in your cart are out of stock. Please update your cart and try again.",
+          "error"
+        );
+      } else {
+        showToast("Failed to create order. Please try again.", "error");
+      }
     } finally {
       setIsCreatingOrder(false);
     }

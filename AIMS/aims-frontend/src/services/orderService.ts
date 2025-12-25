@@ -18,6 +18,7 @@ export interface CreateOrderRequest {
   city: string;
   province: string;
   postalCode: string;
+  cartSessionKey?: string;
   shippingFee: number;
   items: OrderItem[];
 }
@@ -100,7 +101,10 @@ interface ApiResponse<T> {
 export async function createOrder(
   orderData: CreateOrderRequest
 ): Promise<Order> {
-  const response = await apiClient.post<ApiResponse<Order>>("/orders", orderData);
+  const response = await apiClient.post<ApiResponse<Order>>(
+    "/orders",
+    orderData
+  );
   return response.data.data;
 }
 
@@ -115,7 +119,9 @@ export async function createOrder(
  * const order = await orderService.getOrder(123);
  */
 export async function getOrder(orderId: number | string): Promise<Order> {
-  const response = await apiClient.get<ApiResponse<Order>>(`/orders/${orderId}`);
+  const response = await apiClient.get<ApiResponse<Order>>(
+    `/orders/${orderId}`
+  );
   return response.data.data;
 }
 
@@ -132,7 +138,9 @@ export async function getOrder(orderId: number | string): Promise<Order> {
 export async function cancelOrder(
   orderId: number | string
 ): Promise<Order | void> {
-  const response = await apiClient.post<ApiResponse<Order>>(`/orders/${orderId}/cancel`);
+  const response = await apiClient.post<ApiResponse<Order>>(
+    `/orders/${orderId}/cancel`
+  );
   return response.data.data;
 }
 
