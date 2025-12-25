@@ -9,7 +9,6 @@ on:
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (contains(github.event.head_commit.modified, 'AIMS/aims-frontend') || contains(github.event.head_commit.added, 'AIMS/aims-frontend') || contains(github.event.head_commit.removed, 'AIMS/aims-frontend'))
 
     steps:
       - uses: actions/checkout@v3
