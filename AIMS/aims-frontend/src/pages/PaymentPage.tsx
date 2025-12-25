@@ -2,7 +2,9 @@ import { useMemo, useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./Checkout.css";
 import { useCart } from "../context/CartContext";
+import { useToast } from "../context/ToastContext";
 import paymentService from "../services/paymentService";
+import orderService from "../services/orderService";
 import { QRCodeCanvas } from "qrcode.react";
 
 type PaymentMethod = "vietqr" | "paypal";
@@ -16,10 +18,12 @@ const PaymentPage = () => {
   const deliveryFee = location.state?.deliveryFee ?? 10;
   const total = location.state?.total ?? 0;
   const { lines, subtotal, clear } = useCart();
+  const { showToast } = useToast();
   const [method, setMethod] = useState<PaymentMethod>("vietqr");
   const [showSuccess, setShowSuccess] = useState(false);
   const [showFail, setShowFail] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const calculatedTotal = useMemo(
     () => total || subtotal + deliveryFee,
@@ -63,8 +67,8 @@ const PaymentPage = () => {
     paymentStatus === "PAID"
       ? "Đã thanh toán"
       : paymentStatus
-        ? paymentStatus
-        : "Đang chờ";
+      ? paymentStatus
+      : "Đang chờ";
 
   // Fetch VietQR code when method is selected
   useEffect(() => {
@@ -121,7 +125,9 @@ const PaymentPage = () => {
 
     const pollStatus = async () => {
       try {
-        const statusResponse = await paymentService.checkPayOSPaymentStatus(paymentLinkId);
+        const statusResponse = await paymentService.checkPayOSPaymentStatus(
+          paymentLinkId
+        );
         if (cancelled) return;
         const status = statusResponse.status;
         setPaymentStatus(status);
@@ -159,6 +165,42 @@ const PaymentPage = () => {
       }
     };
   }, [method, paymentLinkId, clear, navigate]);
+
+  const handleCancelOrder = async () => {
+    if (!orderId) {
+      showToast("No order to cancel", "error");
+      return;
+    }
+
+    if (
+      !confirm(
+        "Are you sure you want to cancel this order? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      await orderService.cancelOrder(orderId);
+      showToast(
+        "Order cancelled successfully. You can modify your cart and create a new order.",
+        "success"
+      );
+      setTimeout(() => {
+        navigate("/cart");
+      }, 1500);
+    } catch (error: any) {
+      console.error("Failed to cancel order:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to cancel order";
+      showToast(errorMessage, "error");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const handlePay = async (simulateSuccess: boolean) => {
     if (!orderId) {
@@ -273,7 +315,11 @@ const PaymentPage = () => {
                             src={qrCodeUrl}
                             alt="VietQR"
                             onError={() => setQrImageError(true)}
-                            style={{ width: 240, height: 240, objectFit: "contain" }}
+                            style={{
+                              width: 240,
+                              height: 240,
+                              objectFit: "contain",
+                            }}
                           />
                         ) : (
                           <QRCodeCanvas value={qrCodeUrl} size={240} />
@@ -308,10 +354,10 @@ const PaymentPage = () => {
                 <button
                   className="btn light"
                   type="button"
-                  onClick={() => navigate("/")}
-                  disabled={isProcessing}
+                  onClick={handleCancelOrder}
+                  disabled={isProcessing || isCancelling}
                 >
-                  Cancel
+                  {isCancelling ? "Cancelling..." : "Cancel Order"}
                 </button>
               </>
             ) : (
@@ -338,10 +384,10 @@ const PaymentPage = () => {
                 <button
                   className="btn light"
                   type="button"
-                  onClick={() => handlePay(false)}
-                  disabled={isProcessing}
+                  onClick={handleCancelOrder}
+                  disabled={isProcessing || isCancelling}
                 >
-                  Giả lập lỗi
+                  {isCancelling ? "Cancelling..." : "Cancel Order"}
                 </button>
               </>
             )}
