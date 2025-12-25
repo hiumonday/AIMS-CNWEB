@@ -1,92 +1,99 @@
 import { Link } from 'react-router-dom';
 import './CartPage.css';
 import { useCart } from '../context/CartContext';
+import { useState } from 'react';
 
 const CartPage = () => {
-  const { lines, updateQty, removeItem, subtotal, totalItems } = useCart();
+  const { lines, updateQty, removeItem, subtotal } = useCart();
+
+  // Hàm xử lý khi ảnh bị lỗi (không load được)
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = "https://placehold.co/100x100?text=No+Image";
+    e.currentTarget.onerror = null;
+  };
 
   return (
-    <main className="cart-shell">
-      <div className="cart-topbar">
-        <Link to="/products" className="back-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          Back to Products
-        </Link>
-      </div>
+    <main className="shopping-bag-page">
+      <div className="shopping-bag-container">
 
-      {lines.length === 0 && (
-        <div className="panel empty-cart">
-          <div style={{ fontSize: 48, color: '#cbd5e1' }}>👜</div>
-          <div style={{ color: '#0f172a', fontSize: 18 }}>Your cart is empty</div>
-          <p className="muted">Add some products to get started!</p>
-          <Link className="btn primary" to="/products">
-            Continue Shopping
-          </Link>
-        </div>
-      )}
+        <header className="bag-header-section">
+          <h1>SHOPPING BAG</h1>
+        </header>
 
-      <div className="cart-grid">
-        <section className="cart-left">
-          <h1>Shopping Cart</h1>
-          {lines.length === 0 && <p className="muted">Your cart is empty.</p>}
-          {lines.map(line => (
-            <article key={line.productId} className="cart-card">
-              <div className="cart-item">
-                <img src={line.imageUrl} alt={line.productName} />
-                <div className="cart-info">
-                  <h3>
-                    <Link to={`/product/${line.productId}`}>{line.productName}</Link>
-                  </h3>
+        {lines.length === 0 ? (
+          <div className="empty-bag">
+            <p>YOUR BAG IS EMPTY</p>
+            <Link className="btn-continue-shopping" to="/products">
+              SHOP NOW
+            </Link>
+          </div>
+        ) : (
+          <div className="bag-content">
+            <div className="bag-items">
+              {lines.map(line => (
+                <div key={line.productId} className="bag-item-row">
+                  <div className="item-media">
+                    <img
+                      src={line.imageUrl || "https://placehold.co/150x200?text=Product"}
+                      alt={line.productName}
+                      onError={handleImageError}
+                      loading="lazy"
+                    />
+                  </div>
+
+                  <div className="item-info-col">
+                    <h3 className="item-title">
+                      <Link to={`/product/${line.productId}`}>{line.productName}</Link>
+                    </h3>
+                    <div className="item-price-display">
+                      {line.price.toLocaleString('vi-VN')} VND
+                    </div>
+
+                    {/* Placeholder for size/color if available */}
+                    <div className="item-variant">
+                      One Size
+                    </div>
+
+                    <button
+                      className="link-remove"
+                      onClick={() => removeItem(String(line.productId))}
+                    >
+                      REMOVE
+                    </button>
+                  </div>
+
+                  <div className="item-actions-col">
+                    <div className="qty-control-minimal">
+                      <button onClick={() => updateQty(String(line.productId), line.quantity - 1)}>−</button>
+                      <span>{line.quantity}</span>
+                      <button onClick={() => updateQty(String(line.productId), line.quantity + 1)}>+</button>
+                    </div>
+                  </div>
+
+                  {/* Optional: Show Total for line item if desired, or keep minimal like image */}
+                </div>
+              ))}
+            </div>
+
+            <div className="bag-footer">
+              <div className="bag-summary-section">
+                <div className="subtotal-display">
+                  <span>SUBTOTAL:</span>
+                  <span className="amount">{subtotal.toLocaleString('vi-VN')} VND</span>
+                </div>
+
+                <div className="bag-buttons-stack">
+                  <Link to="/products" className="btn-minimal-outline">
+                    CONTINUE SHOPPING
+                  </Link>
+                  <Link to="/checkout/delivery" className="btn-minimal-solid">
+                    CHECKOUT
+                  </Link>
                 </div>
               </div>
-              <div className="cart-actions">
-                <div className="qty-control">
-                  <button type="button" onClick={() => updateQty(String(line.productId), line.quantity - 1)}>
-                    -
-                  </button>
-                  <span>{line.quantity}</span>
-                  <button type="button" onClick={() => updateQty(String(line.productId), line.quantity + 1)}>
-                    +
-                  </button>
-                </div>
-                <div className="cart-price">
-                  <span className="muted">${line.price.toFixed(2)} each</span>
-                  <span className="price">${line.totalPrice.toFixed(2)}</span>
-                </div>
-                <button className="trash" type="button" aria-label="Remove" onClick={() => removeItem(String(line.productId))}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    <line x1="10" x2="10" y1="11" y2="17" />
-                    <line x1="14" x2="14" y1="11" y2="17" />
-                  </svg>
-                </button>
-              </div>
-            </article>
-          ))}
-        </section>
-
-        <aside className="cart-summary">
-          <h3>Order Summary</h3>
-          <div className="summary-row">
-            <span>Subtotal:</span>
-            <span>${subtotal.toFixed(2)}</span>
+            </div>
           </div>
-          <div className="summary-row">
-            <span>Items:</span>
-            <span>{totalItems}</span>
-          </div>
-          <div className="summary-row total">
-            <span>Total:</span>
-            <span className="price">${subtotal.toFixed(2)}</span>
-          </div>
-          <p className="muted small">Delivery fee will be calculated at checkout</p>
-          <Link to="/checkout/delivery" className="btn primary block" style={{ textAlign: 'center' }}>
-            Proceed to Delivery
-          </Link>
-        </aside>
+        )}
       </div>
     </main>
   );

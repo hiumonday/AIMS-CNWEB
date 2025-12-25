@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import cartService, { type CartLine } from "../services/cartService";
+import { getProductById } from "../services/productService";
 
 type CartContextValue = {
   items: CartLine[];
@@ -24,11 +25,34 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
+// Helper to fetch images for cart items
+const enrichCartItems = async (items: CartLine[]): Promise<CartLine[]> => {
+  if (!items || items.length === 0) return [];
+
+  const promises = items.map(async (item) => {
+    try {
+      // Return item as-is if it already has a valid valid http image (unlikely given backend issue)
+      if (item.imageUrl && item.imageUrl.startsWith('http')) return item;
+
+      const product = await getProductById(String(item.productId));
+      if (product && product.imageUrl) {
+        return { ...item, imageUrl: product.imageUrl };
+      }
+      return item;
+    } catch (err) {
+      console.warn(`Failed to enrich item ${item.productId}`, err);
+      return item;
+    }
+  });
+
+  return Promise.all(promises);
+};
+
 export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartLine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [cartSubtotal, setCartSubtotal] = useState(0);
-  
+
   const sessionKey = cartService.getSessionKey();
 
   const refreshCart = async () => {
@@ -36,8 +60,9 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
     try {
       const cart = await cartService.getCart(sessionKey);
       if (cart && cart.items) {
-        setItems(cart.items);
-        // Use totalBeforeVat from response as subtotal, or sum items
+        // Enrich items with images
+        const enriched = await enrichCartItems(cart.items);
+        setItems(enriched);
         setCartSubtotal(cart.totalBeforeVat || 0);
       } else {
         setItems([]);
@@ -63,12 +88,12 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
       });
 
       if (updatedCart.items) {
-        setItems(updatedCart.items);
+        const enriched = await enrichCartItems(updatedCart.items);
+        setItems(enriched);
         setCartSubtotal(updatedCart.totalBeforeVat || 0);
       }
     } catch (err) {
       console.error("Failed to add item to cart:", err);
-      // Optimistic update could go here, but with complex response, safer to just rely on server or simple retry
     }
   };
 
@@ -84,7 +109,8 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
       });
 
       if (updatedCart.items) {
-        setItems(updatedCart.items);
+        const enriched = await enrichCartItems(updatedCart.items);
+        setItems(enriched);
         setCartSubtotal(updatedCart.totalBeforeVat || 0);
       }
     } catch (err) {
@@ -96,14 +122,12 @@ export const CartProvider: FC<{ children: ReactNode }> = ({ children }) => {
     try {
       const cartItemId = Number(productId);
       await cartService.removeItem(sessionKey, cartItemId);
-      // For remove, we might need to refresh or just filter locally if we don't get full cart back
-      // cartService.removeItem returns void in current def.
-      // We should probably refresh cart or filter locally to update UI immediately
+
+      // Update local state immediately
       setItems((prev) => prev.filter((i) => i.productId !== Number(productId)));
-      // Note: Subtotal won't update accurately with local filter unless we calc it. 
-      // Ideally API returns updated cart on delete too, but service says void.
-      // Let's re-fetch or calc locally.
-      refreshCart(); 
+
+      // Refresh to ensure sync
+      refreshCart();
     } catch (err) {
       console.error("Failed to remove cart item:", err);
     }

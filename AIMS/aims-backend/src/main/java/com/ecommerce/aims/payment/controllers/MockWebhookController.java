@@ -43,7 +43,8 @@ public class MockWebhookController {
     @PostMapping("/payment-captured")
     public ApiResponse<String> mockPaymentCaptured(@RequestBody MockWebhookRequest request) {
         // Find payment transaction by orderId
-        PaymentTransaction transaction = paymentTransactionRepository.findByOrderId(request.getOrderId())
+        PaymentTransaction transaction = paymentTransactionRepository
+                .findTopByOrderIdOrderByCreatedAtDesc(request.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Transaction not found for order: " + request.getOrderId()));
 
         // Update transaction status (Quang use these functions for ur webhook
@@ -75,7 +76,8 @@ public class MockWebhookController {
     @PostMapping("/payment-timeout")
     public ApiResponse<String> mockPaymentTimeout(@RequestBody MockWebhookRequest request) {
         // Find payment transaction by orderId
-        PaymentTransaction transaction = paymentTransactionRepository.findByOrderId(request.getOrderId())
+        PaymentTransaction transaction = paymentTransactionRepository
+                .findTopByOrderIdOrderByCreatedAtDesc(request.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Transaction not found for order: " + request.getOrderId()));
 
         // Update transaction status (Quang use these functions for ur webhook
@@ -106,7 +108,8 @@ public class MockWebhookController {
     @PostMapping("/payment-cancelled")
     public ApiResponse<String> mockPaymentCancelled(@RequestBody MockWebhookRequest request) {
         // Find payment transaction by orderId
-        PaymentTransaction transaction = paymentTransactionRepository.findByOrderId(request.getOrderId())
+        PaymentTransaction transaction = paymentTransactionRepository
+                .findTopByOrderIdOrderByCreatedAtDesc(request.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Transaction not found for order: " + request.getOrderId()));
 
         // Update transaction status (Quang use these functions for ur webhook

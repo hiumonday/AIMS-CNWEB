@@ -49,11 +49,7 @@ function sortKeyToParam(sort: SortKey): "title" | "priceAsc" | "priceDesc" {
 
 function formatVnd(value?: number): string {
   if (value == null || isNaN(value)) return "";
-  try {
-    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
-  } catch {
-    return `${value.toLocaleString()} VND`;
-  }
+  return `${value.toLocaleString('vi-VN')} VND`;
 }
 
 const ProductListPage = () => {
@@ -73,6 +69,7 @@ const ProductListPage = () => {
   const [pageSize, setPageSize] = useState(itemsPerPage);
   const [priceBand, setPriceBand] = useState<PriceBand>("all");
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -131,58 +128,76 @@ const ProductListPage = () => {
 
   return (
     <main className="landing products-page">
-      {/* Decorative Snowflakes */}
-      <div className="snowflake">❅</div>
-      <div className="snowflake">❆</div>
-      <div className="snowflake">❅</div>
-
-      <section className="products-hero theme--xmas">
+      <section className="products-hero minimalist">
         <div className="products-hero__content">
-          <div className="theme__eyebrow">AIMS STORE · HOLIDAY SPECIAL</div>
-          <h1>Quà tặng mùa lễ hội</h1>
-          <p>Bộ sưu tập được tuyển chọn kỹ lưỡng cho mùa Giáng sinh an lành.</p>
+          <h1>AIMS MEDIA</h1>
 
           <div className="filters-bar">
-            <div className="search-box">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="7" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Tìm kiếm..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-              />
+            <div className="filters-top">
+              <div className="filter-group search-group">
+                <input
+                  type="text"
+                  placeholder="SEARCH PRODUCTS..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </div>
+
+              <button
+                type="button"
+                className={`filter-toggle${filtersOpen ? " is-open" : ""}`}
+                onClick={() => setFiltersOpen((prev) => !prev)}
+                aria-expanded={filtersOpen}
+                aria-controls="filters-panel"
+              >
+                <span>FILTERS</span>
+                <svg className="filter-toggle__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
             </div>
 
-            <div className="select-group">
-              <select value={category} onChange={(e) => handleCategoryChange(e.target.value as Category | "All")}>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat === "All" ? "Tất cả" : cat}</option>
-                ))}
-              </select>
+            <div
+              id="filters-panel"
+              className={`filter-panel${filtersOpen ? " is-open" : ""}`}
+              aria-hidden={!filtersOpen}
+            >
+              <div className="filter-panel__inner">
+                <div className="filter-row">
+                  <div className="select-wrapper">
+                    <select value={category} onChange={(e) => handleCategoryChange(e.target.value as Category | "All")}>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>{cat === "All" ? "ALL CATEGORIES" : cat.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  </div>
 
-          <select
-            value={priceBand}
-            onChange={(e) => {
-              setPriceBand(e.target.value as PriceBand);
-              setPage(1);
-            }}
-          >
-                {priceRanges.map((range) => (
-                  <option key={range.value} value={range.value}>{range.label}</option>
-                ))}
-              </select>
+                  <div className="select-wrapper">
+                    <select
+                      value={priceBand}
+                      onChange={(e) => {
+                        setPriceBand(e.target.value as PriceBand);
+                        setPage(1);
+                      }}
+                    >
+                      {priceRanges.map((range) => (
+                        <option key={range.value} value={range.value}>{range.label.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  </div>
 
-              <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
-                <option value="title">Tên: A-Z</option>
-                <option value="price-asc">Giá: Thấp - Cao</option>
-                <option value="price-desc">Giá: Cao - Thấp</option>
-              </select>
+                  <div className="select-wrapper">
+                    <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+                      <option value="title">NAME: A-Z</option>
+                      <option value="price-asc">PRICE: LOW TO HIGH</option>
+                      <option value="price-desc">PRICE: HIGH TO LOW</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -216,39 +231,64 @@ const ProductListPage = () => {
                     </h3>
                     <div className="product-meta">
                       <span className="price">{priceLabel || `${item.price.toLocaleString()} VND`}</span>
-                      <span className="stock-info">Kho: {item.stock}</span>
+                      <span className="stock-info">stock: {item.stock}</span>
                     </div>
 
                     <div className="product-footer">
-                      {/* Bộ điều chỉnh số lượng */}
+                      {/* Side-by-side: Quantity | Cart | View */}
                       <div className="qty-control">
-                        <button onClick={() => setQuantities(prev => ({ ...prev, [item.id]: Math.max(1, (prev[item.id] || 1) - 1) }))}>-</button>
+                        <button
+                          className="qty-btn qty-btn--down"
+                          onClick={() => setQuantities(prev => ({ ...prev, [item.id]: Math.max(1, (prev[item.id] || 1) - 1) }))}
+                          aria-label="Decrease quantity"
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
                         <span>{currentQty}</span>
-                        <button onClick={() => setQuantities(prev => ({ ...prev, [item.id]: Math.min(item.stock, (prev[item.id] || 1) + 1) }))}>+</button>
+                        <button
+                          className="qty-btn qty-btn--up"
+                          onClick={() => setQuantities(prev => ({ ...prev, [item.id]: Math.min(item.stock, (prev[item.id] || 1) + 1) }))}
+                          aria-label="Increase quantity"
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
                       </div>
 
-                      {/* Nút hành động */}
                       <div className="action-buttons">
                         <button
                           className="btn-icon btn-cart"
                           onClick={() => handleAddToCart(item)}
-                          title="Thêm vào giỏ hàng"
+                          title="ADD TO CART"
                         >
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="9" cy="21" r="1" />
-                            <circle cx="20" cy="21" r="1" />
-                            <path d="M1 1h4l1.68 10.06a2 2 0 0 0 2 1.69h7.72a2 2 0 0 0 2-1.69l.6-4.06H6" />
-                          </svg>
+                          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l1.68 10.06a2 2 0 0 0 2 1.69h7.72a2 2 0 0 0 2-1.69l.6-4.06H6" />
+          </svg>
                         </button>
 
                         <Link
                           to={`/product/${item.id}`}
                           className="btn-icon btn-view"
-                          title="Xem chi tiết"
+                          title="VIEW DETAILS"
                         >
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <circle cx="12" cy="12" r="3" />
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
                           </svg>
                         </Link>
                       </div>

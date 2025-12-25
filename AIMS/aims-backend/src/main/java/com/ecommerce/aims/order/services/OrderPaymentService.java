@@ -40,7 +40,7 @@ public class OrderPaymentService {
                 .orElseThrow(() -> new NotFoundException("Order not found"));
 
         if (order.getStatus() == OrderStatus.PENDING_PROCESSING) {
-            order.setStatus(OrderStatus.CANCELLED);
+            order.setStatus(OrderStatus.FAILED);
             stockService.restoreStock(order.getItems());
             orderRepository.save(order);
 
@@ -57,7 +57,7 @@ public class OrderPaymentService {
                 .orElseThrow(() -> new NotFoundException("Order not found"));
 
         if (order.getStatus() == OrderStatus.PENDING_PROCESSING) {
-            order.setStatus(OrderStatus.CANCELLED);
+            order.setStatus(OrderStatus.FAILED);
             stockService.restoreStock(order.getItems());
             orderRepository.save(order);
 

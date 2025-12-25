@@ -7,7 +7,7 @@ import type { DeliveryInfo } from "../types";
 import orderService from "../services/orderService";
 import cartService from "../services/cartService";
 
-const baseDeliveryFee = 10;
+const baseDeliveryFee = 15000;
 
 const DeliveryPage = () => {
   const navigate = useNavigate();
@@ -35,7 +35,7 @@ const DeliveryPage = () => {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   const deliveryFee = useMemo(
-    () => (subtotal > 100 ? 0 : baseDeliveryFee),
+    () => (subtotal > 100000 ? 0 : baseDeliveryFee),
     [subtotal]
   );
   const total = subtotal + deliveryFee;
@@ -162,21 +162,11 @@ const DeliveryPage = () => {
     <main className="checkout-shell">
       <div className="checkout-topbar">
         <Link to="/cart" className="back-link">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          Back to Cart
+          &lt; Back to Bag
         </Link>
       </div>
 
-      <h1 style={{ margin: "0 0 18px" }}>Delivery Information</h1>
+      <h1>Delivery Information</h1>
       <div className="checkout-layout">
         <section className="panel">
           <h3>Shipping Address</h3>
@@ -272,25 +262,29 @@ const DeliveryPage = () => {
           </div>
         </section>
 
-        <aside className="panel">
-          <h3>Delivery Summary</h3>
+        <aside className="panel panel--summary">
+          <div className="panel-header">
+            <h3>Delivery Summary</h3>
+            <span className="panel-meta">{lines.length} items</span>
+          </div>
           <div className="summary">
-            <div className="summary-row">
-              <span>Subtotal:</span>
-              <span>${subtotal.toFixed(2)}</span>
+            <div className="summary-section">
+              <div className="summary-section__title">Charges</div>
+              <div className="summary-row">
+                <span>Subtotal</span>
+                <span>{subtotal.toLocaleString('vi-VN')} VND</span>
+              </div>
+              <div className="summary-row">
+                <span>Delivery Fee</span>
+                <span>{deliveryFee.toLocaleString('vi-VN')} VND</span>
+              </div>
+              <p className="summary-note">
+                Free delivery on orders over 100.000 VND
+              </p>
             </div>
-            <div className="summary-row">
-              <span>Delivery Fee:</span>
-              <span>${deliveryFee.toFixed(2)}</span>
-            </div>
-            <div className="summary-row">
-              <span className="muted small">
-                Free delivery on orders over $100
-              </span>
-            </div>
-            <div className="summary-row total">
-              <span>Total:</span>
-              <span className="price">${total.toFixed(2)}</span>
+            <div className="summary-total">
+              <span>Total</span>
+              <span className="price">{total.toLocaleString('vi-VN')} VND</span>
             </div>
             <button
               className="btn primary block"
@@ -298,7 +292,7 @@ const DeliveryPage = () => {
               onClick={onContinue}
               disabled={isCreatingOrder}
             >
-              {isCreatingOrder ? "Creating Order..." : "Continue to Payment"}
+              {isCreatingOrder ? "CREATING ORDER..." : "CONTINUE TO PAYMENT"}
             </button>
           </div>
         </aside>
