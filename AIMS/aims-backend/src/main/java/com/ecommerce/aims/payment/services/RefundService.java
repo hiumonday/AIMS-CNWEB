@@ -8,7 +8,7 @@ import com.ecommerce.aims.payment.dto.PaymentResultResponse;
 import com.ecommerce.aims.payment.dto.RefundRequest;
 import com.ecommerce.aims.payment.models.PaymentProvider;
 import com.ecommerce.aims.payment.models.PaymentStatus;
-import com.ecommerce.aims.payment.repository.PaymentTransactionRepository;
+import com.ecommerce.aims.payment.repository.IPaymentTransactionRepository;
 import com.ecommerce.aims.payment.models.PaymentTransaction;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RefundService {
 
     // SOLID: This service currently mixes payment refund logic and order status updates.
-    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final IPaymentTransactionRepository IPaymentTransactionRepository;
     private final PayPalService payPalService;
     private final OrderRepository orderRepository;
 
@@ -28,7 +28,7 @@ public class RefundService {
     public PaymentResultResponse refund(RefundRequest request) {
         Objects.requireNonNull(request, "request must not be null");
         Long transactionId = Objects.requireNonNull(request.getTransactionId(), "transactionId must not be null");
-        PaymentTransaction transaction = paymentTransactionRepository.findById(transactionId)
+        PaymentTransaction transaction = IPaymentTransactionRepository.findById(transactionId)
             .orElseThrow(() -> new NotFoundException("Transaction not found"));
         java.math.BigDecimal refundAmount = request.getAmount() != null ? request.getAmount() : transaction.getAmount();
         // SOLID: Provider-specific branching means adding another refund provider edits this method (OCP).
@@ -38,7 +38,7 @@ public class RefundService {
         }
         boolean fullRefund = refundAmount != null && transaction.getAmount() != null && refundAmount.compareTo(transaction.getAmount()) >= 0;
         transaction.setStatus(fullRefund ? PaymentStatus.REFUNDED : PaymentStatus.CAPTURED);
-        paymentTransactionRepository.save(transaction);
+        IPaymentTransactionRepository.save(transaction);
         updateOrderRefunded(transaction.getOrderId(), fullRefund);
         return PaymentResultResponse.builder()
             .transactionId(transaction.getId())
