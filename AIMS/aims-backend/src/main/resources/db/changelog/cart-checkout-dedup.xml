@@ -11,7 +11,7 @@
         </addColumn>
     </changeSet>
     <changeSet id="1766641852570-2" author="huygdo">
-        <addNotNullConstraint columnName="is_checked_out" tableName="carts"/>
+        <addNotNullConstraint columnName="is_checked_out" tableName="carts" columnDataType="BOOLEAN" defaultNullValue="false"/>
     </changeSet>
 
 </databaseChangeLog>

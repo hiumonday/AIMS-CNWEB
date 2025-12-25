@@ -73,9 +73,9 @@ const DeliveryPage = () => {
         shippingFee: deliveryFee,
         items: lines.map((line) => ({
           productId: Number(line.productId),
-          productTitle: line.product.title,
-          quantity: line.qty,
-          price: line.product.price,
+          productTitle: line.productName,
+          quantity: line.quantity,
+          price: line.price,
         })),
       });
 

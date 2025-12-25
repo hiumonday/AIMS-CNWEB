@@ -71,23 +71,63 @@ export async function register(
  * @returns Login response with user info
  *
  * @example
+ * The cookie will be automatically included in subsequent requests
+ * via axios withCredentials: true configuration.
+ *
+ * @param email - User email
+ * @param password - User password
+ * @returns Login response with user info
+ *
+ * @example
  * const result = await authService.login('user@example.com', 'password123');
  * // Cookie is automatically set by backend and managed by browser
  */
 export async function login(
   email: string,
   password: string
-): Promise<ApiResponse<AuthResponse>> {
-  const response = await apiClient.post<ApiResponse<AuthResponse>>("/auth/login", {
-    email,
-    password,
-  });
+): Promise<AuthResponse> {
+  try {
+    console.log("Calling login API with email:", email);
+    const response = await apiClient.post<AuthResponse>("/auth/login", {
+      email,
+      password,
+    });
 
-  if (response.data.success && response.data.data?.user?.id) {
-    localStorage.setItem("userId", String(response.data.data.user.id));
+    console.log("Login response received:", response);
+
+    // Check if response conforms to ApiResponse structure (success, message, data)
+    const responseBody = response.data as any;
+
+    // If wrapped in ApiResponse structure
+    if (responseBody.success && responseBody.data) {
+      const authData = responseBody.data;
+      if (authData.user?.id) {
+        localStorage.setItem("userId", String(authData.user.id));
+      }
+      if (authData.accessToken) {
+        localStorage.setItem("accessToken", authData.accessToken);
+      }
+      return authData;
+    }
+
+    // If not wrapped (legacy or different endpoint behavior)
+    if (responseBody.user?.id) {
+      localStorage.setItem("userId", String(responseBody.user.id));
+      if (responseBody.accessToken) {
+        localStorage.setItem("accessToken", responseBody.accessToken);
+      }
+      return responseBody;
+    }
+
+    // Fallback
+    return responseBody;
+  } catch (error: any) {
+    console.error("Login error details:", error);
+    console.error("Error response:", error.response);
+    console.error("Error request:", error.request);
+    console.error("Error message:", error.message);
+    throw error;
   }
-
-  return response.data;
 }
 
 /**
@@ -135,10 +175,12 @@ export async function logout(): Promise<void> {
     // For now, just redirect to login
     // Backend cookie will expire or can be cleared server-side
     localStorage.removeItem("userId");
+    localStorage.removeItem("accessToken");
     window.location.href = "/login";
   } catch (err) {
     // Even if logout fails, redirect to login
     localStorage.removeItem("userId");
+    localStorage.removeItem("accessToken");
     window.location.href = "/login";
   }
 }
