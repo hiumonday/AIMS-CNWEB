@@ -17,14 +17,19 @@ import com.ecommerce.aims.order.repository.OrderRepository;
 import com.ecommerce.aims.payment.models.PaymentStatus;
 import com.ecommerce.aims.payment.models.PaymentTransaction;
 import com.ecommerce.aims.payment.repository.IPaymentTransactionRepository;
+import com.ecommerce.aims.payment.models.PaymentStatus;
+import com.ecommerce.aims.payment.models.PaymentTransaction;
+import com.ecommerce.aims.payment.repository.IPaymentTransactionRepository;
 import com.ecommerce.aims.product.models.Product;
 import com.ecommerce.aims.product.models.ProductStatus;
 import com.ecommerce.aims.product.repository.ProductRepository;
+import com.ecommerce.aims.product.services.StockService;
 import com.ecommerce.aims.product.services.StockService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -192,6 +197,8 @@ public class OrderService {
 
         stockService.restoreStockWithLocking(order.getItems());
 
+        stockService.restoreStockWithLocking(order.getItems());
+
         order.setStatus(OrderStatus.CANCELLED);
         Order saved = orderRepository.save(order);
 
@@ -271,4 +278,26 @@ public class OrderService {
         }
         return result.setScale(0, RoundingMode.HALF_UP);
     }
+
 }
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                        
+                                
+                                
+                                
+                                
+                                
+                                
+                        
+                
+                
+                

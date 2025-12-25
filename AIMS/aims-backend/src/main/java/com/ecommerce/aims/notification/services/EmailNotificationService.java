@@ -60,7 +60,7 @@ public class EmailNotificationService {
     public void sendEmail(Long orderId, Long transactionId) {
         Long requiredOrderId = Objects.requireNonNull(orderId, "orderId must not be null");
         Order order = orderRepository.findById(requiredOrderId)
-            .orElseThrow(() -> new NotFoundException("Order not found"));
+                .orElseThrow(() -> new NotFoundException("Order not found"));
         PaymentTransaction transaction = resolveTransaction(requiredOrderId, transactionId);
         sendPaymentSuccessEmail(order, transaction);
     }
@@ -110,45 +110,44 @@ public class EmailNotificationService {
     private Context buildContextFromOrder(Order order, PaymentTransaction transaction) {
         DeliveryInfo delivery = order.getDeliveryInfo();
         Invoice invoice = order.getInvoice();
-        String orderTotal = formatAmount(resolveOrderTotal(order, invoice), transaction != null ? transaction.getCurrency() : null);
+        String orderTotal = formatAmount(resolveOrderTotal(order, invoice),
+                transaction != null ? transaction.getCurrency() : null);
         return buildContext(
-            resolveCustomerName(order, delivery),
-            delivery != null ? delivery.getPhone() : null,
-            delivery != null ? delivery.getAddressLine() : null,
-            resolveProvinceCity(delivery),
-            orderTotal,
-            resolveTransactionCode(transaction),
-            resolveTransactionContent(transaction),
-            formatDateTime(resolveTransactionTime(transaction)),
-            buildOrderDetailsUrl(order.getId())
-        );
+                resolveCustomerName(order, delivery),
+                delivery != null ? delivery.getPhone() : null,
+                delivery != null ? delivery.getAddressLine() : null,
+                resolveProvinceCity(delivery),
+                orderTotal,
+                resolveTransactionCode(transaction),
+                resolveTransactionContent(transaction),
+                formatDateTime(resolveTransactionTime(transaction)),
+                buildOrderDetailsUrl(order.getId()));
     }
 
     private Context buildContextFromRequest(SendOrderPaymentEmailRequest request) {
         String orderTotal = formatAmount(request.getTotalAmount(), null);
         String transactionCode = request.getTransactionId() != null ? request.getTransactionId().toString() : null;
         return buildContext(
-            request.getCustomerName(),
-            request.getCustomerPhone(),
-            request.getShippingAddress(),
-            request.getProvinceCity(),
-            orderTotal,
-            transactionCode,
-            request.getTransactionContent(),
-            request.getTransactionTime(),
-            buildOrderDetailsUrl(request.getOrderId())
-        );
+                request.getCustomerName(),
+                request.getCustomerPhone(),
+                request.getShippingAddress(),
+                request.getProvinceCity(),
+                orderTotal,
+                transactionCode,
+                request.getTransactionContent(),
+                request.getTransactionTime(),
+                buildOrderDetailsUrl(request.getOrderId()));
     }
 
     private Context buildContext(String customerName,
-                                 String customerPhone,
-                                 String shippingAddress,
-                                 String provinceCity,
-                                 String orderTotal,
-                                 String transactionCode,
-                                 String transactionContent,
-                                 String transactionTime,
-                                 String orderDetailsUrl) {
+            String customerPhone,
+            String shippingAddress,
+            String provinceCity,
+            String orderTotal,
+            String transactionCode,
+            String transactionContent,
+            String transactionTime,
+            String orderDetailsUrl) {
         Context context = new Context(Locale.US);
         context.setVariable("customerName", safeValue(customerName));
         context.setVariable("customerPhone", safeValue(customerPhone));
@@ -224,7 +223,8 @@ public class EmailNotificationService {
         if (transaction == null) {
             return null;
         }
-        return firstNonBlank(transaction.getProviderReference(), transaction.getCaptureId(), transaction.getQrContent());
+        return firstNonBlank(transaction.getProviderReference(), transaction.getCaptureId(),
+                transaction.getQrContent());
     }
 
     private LocalDateTime resolveTransactionTime(PaymentTransaction transaction) {
@@ -293,14 +293,73 @@ public class EmailNotificationService {
         return value;
     }
 
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
 
-public void sendPasswordResetEmail(String email, String token) {}
+    @Value("${app.support-email:support@aims.com}")
+    private String supportEmail;
 
-public void sendAdminPasswordResetEmail(String email, String token) {}
-public void sendUserCreatedByAdminEmail(String email, String temporaryPassword) {}
-public void sendUserUpdatedByAdminEmail(String email) {}
+    @Async
+    public void sendPasswordResetEmail(String email, String token) {
+        String resetLink = String.format("%s/reset-password?token=%s", frontendUrl, token);
+        Context context = new Context();
+        context.setVariable("email", email);
+        context.setVariable("resetLink", resetLink);
+        context.setVariable("expirationTime", "15 minutes");
+        String htmlBody = templateEngine.process("email/password-reset", context);
+        sendHtmlEmail(email, "AIMS Password Reset Request", htmlBody);
+    }
 
-public void sendUserDeletedByAdminEmail(String email) {}
-public void sendUserLockedByAdminEmail(String email) {}
-public void sendUserUnlockedByAdminEmail(String email) {}
+    @Async
+    public void sendAdminPasswordResetEmail(String email, String token) {
+        sendPasswordResetEmail(email, token);
+    }
+
+    @Async
+    public void sendUserCreatedByAdminEmail(String email, String temporaryPassword) {
+        String loginUrl = frontendUrl + "/login";
+        Context context = new Context();
+        context.setVariable("email", email);
+        context.setVariable("temporaryPassword", temporaryPassword);
+        context.setVariable("loginUrl", loginUrl);
+        String htmlBody = templateEngine.process("email/user-created", context);
+        sendHtmlEmail(email, "Welcome to AIMS - Account Created", htmlBody);
+    }
+
+    @Async
+    public void sendUserUpdatedByAdminEmail(String email) {
+        Context context = new Context();
+        context.setVariable("email", email);
+        context.setVariable("supportEmail", supportEmail);
+        String htmlBody = templateEngine.process("email/user-updated", context);
+        sendHtmlEmail(email, "AIMS Account Update Notification", htmlBody);
+    }
+
+    @Async
+    public void sendUserDeletedByAdminEmail(String email) {
+        Context context = new Context();
+        context.setVariable("email", email);
+        context.setVariable("contactEmail", supportEmail);
+        String htmlBody = templateEngine.process("email/user-deleted", context);
+        sendHtmlEmail(email, "AIMS Account Deletion", htmlBody);
+    }
+
+    @Async
+    public void sendUserLockedByAdminEmail(String email) {
+        Context context = new Context();
+        context.setVariable("email", email);
+        context.setVariable("supportEmail", supportEmail);
+        String htmlBody = templateEngine.process("email/user-locked", context);
+        sendHtmlEmail(email, "AIMS Account Locked", htmlBody);
+    }
+
+    @Async
+    public void sendUserUnlockedByAdminEmail(String email) {
+        String loginUrl = frontendUrl + "/login";
+        Context context = new Context();
+        context.setVariable("email", email);
+        context.setVariable("loginUrl", loginUrl);
+        String htmlBody = templateEngine.process("email/user-unlocked", context);
+        sendHtmlEmail(email, "AIMS Account Unlocked", htmlBody);
+    }
 }
