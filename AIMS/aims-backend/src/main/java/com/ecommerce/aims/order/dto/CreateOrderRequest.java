@@ -34,6 +34,8 @@ public class CreateOrderRequest {
     @Schema(example = "100000")
     @NotBlank
     private String postalCode;
+    @Schema(example = "cart-session-uuid-123")
+    private String cartSessionKey;
     @Schema(example = "25000")
     private BigDecimal shippingFee;
     @NotEmpty

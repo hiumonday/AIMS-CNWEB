@@ -25,16 +25,19 @@ public class AuthController {
     private final AuthService authService;
     private final UserService userService;
 
+    @Value("${security.jwt.access-token-expiration:900000}")
+    private long accessTokenExpirationMs;
+
     @Value("${security.jwt.refresh-token-expiration:604800000}")
     private long refreshTokenExpirationMs;
 
     @PostMapping("/login")
     public ApiResponse<AuthResponse> login(
-        @Valid @RequestBody LoginRequest request,
-        HttpServletResponse response
-    ) {
+            @Valid @RequestBody LoginRequest request,
+            HttpServletResponse response) {
         AuthResponse authResponse = authService.login(request);
 
+        setAccessTokenCookie(response, authResponse.getAccessToken());
         setRefreshTokenCookie(response, authResponse.getRefreshToken());
 
         return ApiResponse.success(authResponse, "Login successful");
@@ -42,15 +45,15 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ApiResponse<AuthResponse> refresh(
-        @CookieValue(name = "refreshToken", required = false) String refreshToken,
-        HttpServletResponse response
-    ) {
+            @CookieValue(name = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response) {
         if (refreshToken == null) {
             throw new RuntimeException("Refresh token not found in cookies");
         }
 
         AuthResponse authResponse = authService.refreshAccessToken(refreshToken);
 
+        setAccessTokenCookie(response, authResponse.getAccessToken());
         setRefreshTokenCookie(response, authResponse.getRefreshToken());
 
         return ApiResponse.success(authResponse, "Token refreshed");
@@ -58,14 +61,33 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ApiResponse<Void> logout(HttpServletResponse response) {
-        Cookie cookie = new Cookie("refreshToken", null);
+        // Clear access token cookie
+        Cookie accessTokenCookie = new Cookie("accessToken", null);
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(true);
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(0);
+        response.addCookie(accessTokenCookie);
+
+        // Clear refresh token cookie
+        Cookie refreshTokenCookie = new Cookie("refreshToken", null);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(0);
+        response.addCookie(refreshTokenCookie);
+
+        return ApiResponse.success(null, "Logged out successfully");
+    }
+
+    private void setAccessTokenCookie(HttpServletResponse response, String accessToken) {
+        Cookie cookie = new Cookie("accessToken", accessToken);
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setPath("/");
-        cookie.setMaxAge(0);
+        cookie.setMaxAge((int) (accessTokenExpirationMs / 1000));
+        cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);
-
-        return ApiResponse.success(null, "Logged out successfully");
     }
 
     private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
@@ -80,15 +102,14 @@ public class AuthController {
 
     @PostMapping("/change-password")
     public ApiResponse<UserResponse> changePassword(@RequestParam Long userId,
-                                                    @Valid @RequestBody ChangePasswordRequest request) {
+            @Valid @RequestBody ChangePasswordRequest request) {
         return ApiResponse.success(authService.changePassword(userId, request), "Password updated");
     }
 
     @PostMapping("/register")
     public ApiResponse<AuthResponse> register(
-        @Valid @RequestBody UserRequest request,
-        HttpServletResponse response
-    ) {
+            @Valid @RequestBody UserRequest request,
+            HttpServletResponse response) {
         userService.createUser(request);
 
         LoginRequest loginRequest = new LoginRequest();

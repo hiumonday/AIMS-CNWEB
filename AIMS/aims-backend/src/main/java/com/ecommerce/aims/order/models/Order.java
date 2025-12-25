@@ -41,6 +41,8 @@ public class Order {
     private String customerEmail;
     private String customerName;
 
+    private String cartSessionKey;
+
     @Embedded
     private DeliveryInfo deliveryInfo;
 
@@ -59,6 +61,8 @@ public class Order {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    private LocalDateTime expiresAt; // Payment reservation expiration time
 
     @PrePersist
     public void onCreate() {

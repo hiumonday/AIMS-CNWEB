@@ -55,6 +55,8 @@ public class PaymentTransaction {
 
     private LocalDateTime updatedAt;
 
+    private LocalDateTime expiresAt; // Payment link expiration time
+
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();

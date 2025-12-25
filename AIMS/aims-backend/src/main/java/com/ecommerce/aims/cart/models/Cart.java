@@ -29,6 +29,10 @@ public class Cart {
     @Column(unique = true, nullable = false)
     private String sessionKey;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isCheckedOut = false;
+
     @Builder.Default
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CartItem> items = new ArrayList<>();
