@@ -31,4 +31,14 @@ public class PayPalProperties {
     public void setClientSecret(String clientSecret) {
         this.clientSecret = clientSecret;
     }
+
+    private String webhookId;
+
+    public String getWebhookId() {
+        return webhookId;
+    }
+
+    public void setWebhookId(String webhookId) {
+        this.webhookId = webhookId;
+    }
 }

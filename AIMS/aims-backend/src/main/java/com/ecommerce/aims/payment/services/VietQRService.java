@@ -74,4 +74,34 @@ public class VietQRService {
             default -> PaymentStatus.INIT;
         };
     }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private PaymentService paymentService;
+
+    public void handleWebhook(java.util.Map<String, Object> payload) {
+        if (payload == null)
+            return;
+        Object dataObj = payload.get("data");
+        if (!(dataObj instanceof java.util.Map))
+            return;
+        java.util.Map<?, ?> data = (java.util.Map<?, ?>) dataObj;
+
+        String code = (String) payload.get("code");
+        if (!"00".equals(code))
+            return;
+
+        Object orderCodeObj = data.get("orderCode");
+        if (orderCodeObj == null)
+            return;
+
+        try {
+            Long transactionId = Long.valueOf(orderCodeObj.toString());
+            paymentService.markCaptured(transactionId, null);
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid order code format: " + orderCodeObj);
+        } catch (Exception e) { // Catch NotFoundException and others
+            System.err.println("Webhook processing failed: " + e.getMessage());
+        }
+    }
 }
