@@ -2,9 +2,9 @@ name: Deploy
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, main-cnweb]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, main-cnweb]
 
 jobs:
   deploy-frontend:
