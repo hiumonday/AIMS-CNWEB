@@ -1,6 +1,6 @@
 import { apiClient } from "./api";
 
-import type { Paginated, Product, Category } from "../types";
+import type { Paginated, Product, Category, ProductStatus } from "../types";
 
 const PRICE_DIVISOR = 1000;
 
@@ -29,6 +29,7 @@ type BackendProduct = {
   originalValue?: number;
   currentPrice: number;
   stock: number;
+  imageUrl?: string;
   attributes?: BackendAttributes;
   bookDetail?: {
     id: number;
@@ -109,15 +110,12 @@ const categoryToTypeCode: Record<Category, BackendProductType> = {
   DVD: "DVD",
 };
 
-const typeCodeValues: BackendProductType[] = [
-  "BOOK",
-  "CD",
-  "NEWSPAPER",
-  "DVD",
-];
+const typeCodeValues: BackendProductType[] = ["BOOK", "CD", "NEWSPAPER", "DVD"];
 
 const resolveTypeCode = (product: BackendProduct): BackendProductType => {
-  const raw = String(product.typeCode ?? product.productType ?? "BOOK").toUpperCase();
+  const raw = String(
+    product.typeCode ?? product.productType ?? "BOOK"
+  ).toUpperCase();
   return typeCodeValues.includes(raw as BackendProductType)
     ? (raw as BackendProductType)
     : "BOOK";
@@ -151,9 +149,7 @@ const toStringList = (value: unknown): string | undefined => {
   return toStringValue(value);
 };
 
-const toTrackList = (
-  value: unknown
-): { list?: string; count?: number } => {
+const toTrackList = (value: unknown): { list?: string; count?: number } => {
   if (Array.isArray(value)) {
     const parts = value
       .map((item) => {
@@ -184,10 +180,8 @@ const toTrackList = (
   return {};
 };
 
-const getAttribute = (
-  attributes: BackendAttributes | undefined,
-  key: string
-) => (attributes ? attributes[key] : undefined);
+const getAttribute = (attributes: BackendAttributes | undefined, key: string) =>
+  attributes ? attributes[key] : undefined;
 
 // Map backend product to frontend Product model
 function mapBackendProduct(p: BackendProduct): Product {
@@ -252,10 +246,7 @@ function mapBackendProduct(p: BackendProduct): Product {
         "frequency",
         toStringValue(getAttribute(attributes, "frequency"))
       );
-      setDetail(
-        "sections",
-        toStringList(getAttribute(attributes, "sections"))
-      );
+      setDetail("sections", toStringList(getAttribute(attributes, "sections")));
       setDetail(
         "language",
         toStringValue(getAttribute(attributes, "language"))
@@ -263,10 +254,7 @@ function mapBackendProduct(p: BackendProduct): Product {
       setDetail("issn", toStringValue(getAttribute(attributes, "issn")));
     } else if (typeCode === "CD") {
       const tracks = toTrackList(getAttribute(attributes, "tracks"));
-      setDetail(
-        "artist",
-        toStringValue(getAttribute(attributes, "artists"))
-      );
+      setDetail("artist", toStringValue(getAttribute(attributes, "artists")));
       setDetail(
         "label",
         toStringValue(getAttribute(attributes, "record_label"))
@@ -282,7 +270,9 @@ function mapBackendProduct(p: BackendProduct): Product {
         toStringValue(getAttribute(attributes, "release_date"))
       );
     } else if (typeCode === "DVD") {
-      const runtime = toNumberValue(getAttribute(attributes, "runtime_minutes"));
+      const runtime = toNumberValue(
+        getAttribute(attributes, "runtime_minutes")
+      );
       setDetail(
         "discType",
         toStringValue(getAttribute(attributes, "disc_type"))
@@ -292,10 +282,7 @@ function mapBackendProduct(p: BackendProduct): Product {
         toStringValue(getAttribute(attributes, "director"))
       );
       setDetail("runtime", runtime ? `${runtime} min` : undefined);
-      setDetail(
-        "studio",
-        toStringValue(getAttribute(attributes, "studio"))
-      );
+      setDetail("studio", toStringValue(getAttribute(attributes, "studio")));
       setDetail(
         "language",
         toStringValue(getAttribute(attributes, "language"))
@@ -374,14 +361,16 @@ function mapBackendProduct(p: BackendProduct): Product {
     genre,
     price: p.currentPrice / PRICE_DIVISOR,
     stock: p.stock,
-    image: `https://via.placeholder.com/400x300/${
-      p.dominantColor?.toLowerCase().replace(/\s/g, "") || "cccccc"
-    }/ffffff?text=${encodeURIComponent(p.title)}`,
+    imageUrl:
+      p.imageUrl ||
+      `https://via.placeholder.com/400x300/${
+        p.dominantColor?.toLowerCase().replace(/\s/g, "") || "cccccc"
+      }/ffffff?text=${encodeURIComponent(p.title)}`,
     shortDesc:
       p.returnPolicy ||
       `${p.conditionLabel} condition, ${category.toLowerCase()} item`,
     typeCode,
-    status: p.status,
+    status: p.status as ProductStatus,
     barcode: p.barcode,
     conditionLabel: p.conditionLabel,
     dominantColor: p.dominantColor,
@@ -417,10 +406,7 @@ export type ListParams = {
   sort?: "title" | "priceAsc" | "priceDesc";
 };
 
-function sortProducts(
-  items: Product[],
-  sort?: ListParams["sort"]
-): Product[] {
+function sortProducts(items: Product[], sort?: ListParams["sort"]): Product[] {
   if (!sort) return items;
   const sorted = [...items];
   switch (sort) {
@@ -446,7 +432,9 @@ export async function listProducts(
     const maxPrice = params.maxPrice ?? params.priceMax;
     const priceRange = params.priceRange;
     const categoryFilter =
-      params.category && params.category !== "All" ? params.category : undefined;
+      params.category && params.category !== "All"
+        ? params.category
+        : undefined;
     const typeCode =
       params.typeCode ||
       params.productType ||
