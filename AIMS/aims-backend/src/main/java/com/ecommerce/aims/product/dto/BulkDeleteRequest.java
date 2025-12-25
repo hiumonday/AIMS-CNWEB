@@ -9,6 +9,6 @@ import java.util.List;
 @Data
 public class BulkDeleteRequest {
     @NotEmpty(message = "Product IDs cannot be empty")
-    @Size(max = 10, message = "Cannot delete more than 10 products at once")
+    @Size(max = 10, message = "Cannot delete more than 10 products at once") // add comment to test cd
     private List<Long> productIds;
 }
