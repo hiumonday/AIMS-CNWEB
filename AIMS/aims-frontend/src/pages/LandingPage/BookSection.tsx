@@ -14,7 +14,7 @@ export const bookTheme = {
     'Giấy mịn, bìa đẹp, typography tinh tế. Mở trang đầu tiên, để câu chữ dẫn lối.'
   ],
   metrics: [
-    { value: '200+', label: 'Tựa sách' },
+    { value: '20+', label: 'Tựa sách' },
     { value: '4 loại', label: 'Chủ đề' },
     { value: '24h', label: 'Giao ngay' },
   ],
@@ -22,7 +22,11 @@ export const bookTheme = {
   quickLinks: [
     { short: 'Khắp', url: '/products?cat=explore' },
     { short: 'Xem', url: '/products?cat=view' },
-  ]
+  ],
+  accent: "#e53935", 
+  light: "#ffffff",  
+  dark: "#1a1a1a",  
+  word: "#333333",
 };
 
 const InteractiveBigBook = () => {
@@ -50,7 +54,7 @@ const InteractiveBigBook = () => {
         >
           <span className="note-pin"></span>
           <span className="note-title">Ghi chú</span>
-          <span className="note-body">Gợi ý: mở thử mục “Tác phẩm kinh điển”.</span>
+          <span className="note-body">Chào mừng bạn đến với “Kho tàng tri thức”.</span>
           <span className="note-meta">Chạm để xem</span>
         </button>
 
@@ -141,9 +145,7 @@ const InteractiveBigBook = () => {
             {/* Layout theo bản vẽ tay của bạn */}
             <div className="sketch-layout">
               {/* Cột tiêu đề dọc */}
-              <div className="vertical-col">
-                <span className="vertical-text">SÁCH CỔ ĐIỂN<br />TRẢI NGHIỆM</span>
-              </div>
+              
 
               {/* Cột nội dung chính */}
               <div className="main-col">

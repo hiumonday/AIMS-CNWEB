@@ -51,6 +51,10 @@
   gap: 30px;
 }
 
+.theme--newspaper.is-reading .np-stage {
+  z-index: 10000;
+}
+
 /* --- 2. Header --- */
 .np-header {
   text-align: center;
@@ -97,6 +101,10 @@
   /* Chỉ dùng preserve-3d ở đây */
   transform-style: preserve-3d;
   perspective: 1000px;
+}
+
+.np-fan-wrapper.is-reading {
+  z-index: 10001;
 }
 
 /* --- 4. Newspaper Card (Trạng thái đóng) --- */
@@ -303,9 +311,13 @@
 .np-inner-img {
   width: 100%;
   height: 220px;
-  background: #ddd;
+  background-color: #ddd;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   margin: 10px 0;
-  object-fit: cover;
+  border: 1px solid #e1e1e1;
+  border-radius: 6px;
 }
 
 .np-cols {
@@ -361,6 +373,8 @@
 .np-overlay.active {
   opacity: 1;
   pointer-events: auto;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .fade-out {
@@ -395,8 +409,13 @@
 .np-hero-img {
   width: 100%;
   height: 130px;
-  background: #dcdcd9;
+  background-color: #dcdcd9;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   margin-bottom: 10px;
+  border: 1px solid #d6d6d6;
+  border-radius: 4px;
 }
 
 .np-headline-text {

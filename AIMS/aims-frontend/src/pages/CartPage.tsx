@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import './CartPage.css';
 import { useCart } from '../context/CartContext';
-import { useState } from 'react';
 
 const CartPage = () => {
   const { lines, updateQty, removeItem, subtotal } = useCart();

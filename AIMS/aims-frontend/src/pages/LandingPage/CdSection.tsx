@@ -231,7 +231,7 @@ const CdSection: FC<LandingSectionProps> = ({ style, heroStyle, scrollHint, isAc
         </div>
 
         <div className="vinyl-footer">
-          <Link className="gold-link" to="/products?category=CD">Duyệt Kho Đĩa Than</Link>
+          <Link className="gold-link" to="/products?category=CD">Khám Phá CD Của Bạn</Link>
         </div>
 
       </div>
