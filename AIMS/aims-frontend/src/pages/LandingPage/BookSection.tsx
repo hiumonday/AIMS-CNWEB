@@ -199,7 +199,7 @@ const BookSection: FC<LandingSectionProps> = ({
           <div className="theme__actions">
             <Link
               className="btn primary"
-              to={`/products?query=${bookTheme.searchKey ?? bookTheme.label}`}
+              to={`/products?category=Book`}
             >
               Khám phá {bookTheme.label}
             </Link>
