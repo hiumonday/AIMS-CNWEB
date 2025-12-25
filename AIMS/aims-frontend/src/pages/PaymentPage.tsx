@@ -63,8 +63,8 @@ const PaymentPage = () => {
     paymentStatus === "PAID"
       ? "Đã thanh toán"
       : paymentStatus
-      ? paymentStatus
-      : "Đang chờ";
+        ? paymentStatus
+        : "Đang chờ";
 
   // Fetch VietQR code when method is selected
   useEffect(() => {
@@ -354,9 +354,9 @@ const PaymentPage = () => {
             {lines.map((line) => (
               <div key={line.productId} className="summary-row">
                 <span>
-                  {line.product.title} x {line.qty}
+                  {line.productName} x {line.quantity}
                 </span>
-                <span>${(line.product.price * line.qty).toFixed(2)}</span>
+                <span>${(line.price * line.quantity).toFixed(2)}</span>
               </div>
             ))}
             <div className="summary-row">

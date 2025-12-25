@@ -48,85 +48,100 @@ export interface CreateProductRequest {
  */
 
 /**
+ * Handle API responses that may be wrapped in ApiResponse
+ */
+function handleResponse<T>(response: any): T {
+  console.log("API Response:", response);
+  if (response.data && response.data.success && response.data.data) {
+    return response.data.data;
+  }
+  return response.data;
+}
+
+/**
  * Create a new user (admin only)
  * POST /admin/users
- *
- * @param userData - User details
- * @returns Created user
- *
- * @example
- * const user = await adminService.createUser({
- *   email: 'admin@example.com',
- *   password: 'admin123',
- *   status: 'ACTIVE',
- *   roles: ['ADMIN']
- * });
  */
 export async function createUser(userData: CreateUserRequest): Promise<User> {
-  const response = await apiClient.post<User>("/admin/users", userData);
-  return response.data;
+  console.log("Creating user:", userData);
+  const response = await apiClient.post<any>("/admin/users", userData);
+  return handleResponse<User>(response);
 }
 
 /**
  * List all users with pagination
  * GET /admin/users?page={page}&size={size}
- *
- * @param page - Page number (0-based for backend)
- * @param size - Items per page
- * @returns Paginated user list
- *
- * @example
- * const users = await adminService.listUsers(0, 20);
  */
 export async function listUsers(page = 0, size = 20): Promise<Paginated<User>> {
-  const response = await apiClient.get<Paginated<User>>("/admin/users", {
+  console.log(`Listing users page=${page} size=${size}`);
+  const response = await apiClient.get<any>("/admin/users", {
     params: { page, size },
   });
-  return response.data;
+  return handleResponse<Paginated<User>>(response);
 }
 
 /**
  * Get user by ID
  * GET /admin/users/{id}
- *
- * @param userId - User ID
- * @returns User details
- *
- * @example
- * const user = await adminService.getUser(123);
  */
 export async function getUser(userId: number | string): Promise<User> {
-  const response = await apiClient.get<User>(`/admin/users/${userId}`);
-  return response.data;
+  const response = await apiClient.get<any>(`/admin/users/${userId}`);
+  return handleResponse<User>(response);
 }
 
 /**
  * Update user (if backend supports)
  * PUT /admin/users/{id}
- *
- * @param userId - User ID
- * @param userData - Updated user data
- * @returns Updated user
  */
 export async function updateUser(
   userId: number | string,
   userData: Partial<CreateUserRequest>
 ): Promise<User> {
-  const response = await apiClient.put<User>(
+  console.log(`Updating user ${userId}:`, userData);
+  const response = await apiClient.put<any>(
     `/admin/users/${userId}`,
     userData
   );
-  return response.data;
+  return handleResponse<User>(response);
 }
 
 /**
  * Delete user (if backend supports)
  * DELETE /admin/users/{id}
- *
- * @param userId - User ID to delete
  */
 export async function deleteUser(userId: number | string): Promise<void> {
-  await apiClient.delete(`/admin/users/${userId}`);
+  const response = await apiClient.delete<any>(`/admin/users/${userId}`);
+  return handleResponse<void>(response);
+}
+
+/**
+ * Lock user account
+ * POST /admin/users/{id}/lock
+ */
+export async function lockUser(userId: number | string): Promise<User> {
+  const response = await apiClient.post<any>(`/admin/users/${userId}/lock`);
+  return handleResponse<User>(response);
+}
+
+/**
+ * Unlock user account
+ * POST /admin/users/{id}/unlock
+ */
+export async function unlockUser(userId: number | string): Promise<User> {
+  const response = await apiClient.post<any>(`/admin/users/${userId}/unlock`);
+  return handleResponse<User>(response);
+}
+
+/**
+ * Update user roles
+ * PUT /admin/users/{id}/roles
+ */
+export async function updateUserRoles(
+  userId: number | string,
+  roles: string[]
+): Promise<User> {
+  const response = await apiClient.put<any>(`/admin/users/${userId}/roles`, { roles });
+  return handleResponse<User>(response);
 }
 
 /**
@@ -207,6 +222,9 @@ const adminService = {
   getUser,
   updateUser,
   deleteUser,
+  lockUser,
+  unlockUser,
+  updateUserRoles,
   // Product management
   createProduct,
   updateProduct,
@@ -214,3 +232,4 @@ const adminService = {
 };
 
 export default adminService;
+

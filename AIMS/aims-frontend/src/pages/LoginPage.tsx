@@ -1,59 +1,79 @@
-import { useState } from 'react';
-import authService from '../services/authService';
+import { useState, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
+import { login } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
+    const navigate = useNavigate();
+    const { setUser } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
         try {
-            await authService.login(email, password);
-            // Login successful, redirect to home and force reload to update session key
-            window.location.href = '/home';
+            const result = await login(email, password);
+            console.log('Login result:', result);
+
+            // Result is already AuthResponse (user, accessToken, etc)
+            if (result && result.user && result.user.id) {
+                // Save user to auth context
+                setUser(result.user);
+
+                // Redirect based on roles
+                const hasAdmin = result.user.roles?.includes('ADMIN');
+                const hasPM = result.user.roles?.includes('PRODUCT_MANAGER');
+
+                // Differentiate redirect based on role
+                if (hasAdmin) {
+                    navigate('/management/admin/users');
+                } else if (hasPM) {
+                    navigate('/management/pm/products');
+                } else {
+                    // Regular user - go to home
+                    navigate('/home');
+                }
+            } else {
+                setError('Login failed. Invalid response from server.');
+            }
         } catch (err: any) {
-            console.error('Login failed', err);
-            setError(err.response?.data?.message || 'Failed to login. Please check your credentials.');
+            console.error('Login error:', err);
+            setError(err.message || err.response?.data?.message || 'Login failed. Please check your credentials.');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="login-container">
-            <div className="login-card">
-                <div className="login-header">
-                    <h1>Welcome Back</h1>
-                    <p>Sign in to your account to continue</p>
-                </div>
+        <div className="login-page">
+            <div className="login-container">
+                <h1>Login to AIMS</h1>
+                <form onSubmit={handleSubmit} className="login-form">
+                    {error && <div className="error-message">{error}</div>}
 
-                {error && <div className="error-message">{error}</div>}
-
-                <form className="login-form" onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label htmlFor="email">Email Address</label>
+                        <label htmlFor="email">Email</label>
                         <input
-                            id="email"
                             type="email"
+                            id="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Enter your email"
                             required
-                            autoFocus
                         />
                     </div>
 
                     <div className="form-group">
                         <label htmlFor="password">Password</label>
                         <input
-                            id="password"
                             type="password"
+                            id="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Enter your password"
@@ -62,7 +82,7 @@ const LoginPage = () => {
                     </div>
 
                     <button type="submit" className="btn-login" disabled={loading}>
-                        {loading ? 'Signing in...' : 'Sign In'}
+                        {loading ? 'Logging in...' : 'Login'}
                     </button>
                 </form>
             </div>

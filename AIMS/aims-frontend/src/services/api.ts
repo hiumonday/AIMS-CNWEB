@@ -15,6 +15,28 @@ const apiClient = axios.create({
   withCredentials: true, // Enable sending/receiving cookies
 });
 
+console.log("API Base URL:", API_BASE_URL);
+
+// Request interceptor for debugging and auth header
+apiClient.interceptors.request.use(
+  (config) => {
+    // Add auth token if available
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    console.log("Making request to:", (config.baseURL || "") + (config.url || ""));
+    console.log("Request config:", config);
+    return config;
+  },
+  (error) => {
+    console.error("Request error:", error);
+    return Promise.reject(error);
+  }
+);
+
+
 // Response interceptor - handle errors consistently
 apiClient.interceptors.response.use(
   (response) => {
