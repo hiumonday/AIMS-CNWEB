@@ -11,7 +11,7 @@ import com.ecommerce.aims.payment.dto.PaymentResultResponse;
 import com.ecommerce.aims.payment.models.PaymentProvider;
 import com.ecommerce.aims.payment.models.PaymentStatus;
 import com.ecommerce.aims.payment.models.PaymentTransaction;
-import com.ecommerce.aims.payment.repository.PaymentTransactionRepository;
+import com.ecommerce.aims.payment.repository.IPaymentTransactionRepository;
 import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class PaymentService {
 
     // SOLID: This service coordinates transaction creation, provider dispatch, and order state updates.
     // Consider splitting orchestration vs. order updates if/when refactoring.
-    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final IPaymentTransactionRepository IPaymentTransactionRepository;
     private final PayPalService payPalService;
     private final VietQRService vietQRService;
     private final OrderRepository orderRepository;
@@ -47,7 +47,7 @@ public class PaymentService {
             .currency(request.getCurrency())
             .providerReference(UUID.randomUUID().toString())
             .build());
-        PaymentTransaction saved = paymentTransactionRepository.save(transaction);
+        PaymentTransaction saved = IPaymentTransactionRepository.save(transaction);
         PaymentResultResponse response;
         // SOLID: Provider branching here means adding a new provider requires editing this method (OCP).
         if (request.getProvider() == PaymentProvider.PAYPAL) {
@@ -61,14 +61,14 @@ public class PaymentService {
                 .providerReference(saved.getProviderReference())
                 .build();
         }
-        paymentTransactionRepository.save(saved);
+        IPaymentTransactionRepository.save(saved);
         return response;
     }
 
     @Transactional
     public PaymentResultResponse markCaptured(Long transactionId, String providerReference) {
         Long id = Objects.requireNonNull(transactionId, "transactionId must not be null");
-        PaymentTransaction transaction = paymentTransactionRepository.findById(id)
+        PaymentTransaction transaction = IPaymentTransactionRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Transaction not found"));
         if (providerReference != null) {
             transaction.setProviderReference(providerReference);
@@ -85,7 +85,7 @@ public class PaymentService {
                 .providerReference(transaction.getProviderReference())
                 .build();
         }
-        paymentTransactionRepository.save(transaction);
+        IPaymentTransactionRepository.save(transaction);
         // SOLID: Order status changes are mixed into payment capture; consider a domain event handler.
         Order order = updateOrderPaid(transaction.getOrderId());
         if (order != null && transaction.getStatus() == PaymentStatus.CAPTURED) {

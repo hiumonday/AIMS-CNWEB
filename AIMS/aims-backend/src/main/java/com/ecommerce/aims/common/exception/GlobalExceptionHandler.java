@@ -48,4 +48,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Access denied"));
     }
+
+    @ExceptionHandler(OutOfStockException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOutOfStock(OutOfStockException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
+    }
 }

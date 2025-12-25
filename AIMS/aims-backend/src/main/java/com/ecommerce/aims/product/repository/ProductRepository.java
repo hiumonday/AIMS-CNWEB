@@ -55,4 +55,8 @@ public class ProductRepository {
     public boolean existsById(Long id) {
         return productRepository.existsById(id);
     }
+
+    public List<Product> findAllByIdInForUpdate(List<Long> ids) {
+        return productRepository.findAllByIdInForUpdate(ids);
+    }
 }

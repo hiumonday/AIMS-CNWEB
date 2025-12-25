@@ -16,6 +16,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "payment_transactions")
@@ -41,6 +43,12 @@ public class PaymentTransaction {
     private String providerReference;
     private String qrContent;
     private String captureId;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private String rawPayload;
+
+    private LocalDateTime webhookReceivedAt;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
