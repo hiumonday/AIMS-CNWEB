@@ -3,7 +3,7 @@ import axios, { AxiosError } from "axios";
 // Prefer .env config; fallback to backend dev port 8000 with /api prefix
 const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-  "http://localhost:8000/api";
+  "https://aims-backend-latest.onrender.com/api"; // be domain
 
 // Create axios instance with base configuration
 const apiClient = axios.create({
@@ -26,7 +26,10 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    console.log("Making request to:", (config.baseURL || "") + (config.url || ""));
+    console.log(
+      "Making request to:",
+      (config.baseURL || "") + (config.url || "")
+    );
     console.log("Request config:", config);
     return config;
   },
@@ -35,7 +38,6 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
 
 // Response interceptor - handle errors consistently
 apiClient.interceptors.response.use(

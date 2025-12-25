@@ -67,6 +67,7 @@ public class AuthController {
         accessTokenCookie.setSecure(true);
         accessTokenCookie.setPath("/");
         accessTokenCookie.setMaxAge(0);
+        accessTokenCookie.setAttribute("SameSite", "None");
         response.addCookie(accessTokenCookie);
 
         // Clear refresh token cookie
@@ -75,6 +76,7 @@ public class AuthController {
         refreshTokenCookie.setSecure(true);
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge(0);
+        refreshTokenCookie.setAttribute("SameSite", "None");
         response.addCookie(refreshTokenCookie);
 
         return ApiResponse.success(null, "Logged out successfully");
@@ -86,7 +88,7 @@ public class AuthController {
         cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge((int) (accessTokenExpirationMs / 1000));
-        cookie.setAttribute("SameSite", "Lax");
+        cookie.setAttribute("SameSite", "None");
         response.addCookie(cookie);
     }
 
@@ -96,7 +98,7 @@ public class AuthController {
         cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge((int) (refreshTokenExpirationMs / 1000));
-        cookie.setAttribute("SameSite", "Strict");
+        cookie.setAttribute("SameSite", "None");
         response.addCookie(cookie);
     }
 
