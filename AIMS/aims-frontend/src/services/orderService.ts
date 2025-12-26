@@ -21,6 +21,26 @@ export interface CreateOrderRequest {
   cartSessionKey?: string;
   shippingFee: number;
   items: OrderItem[];
+  cancelReturnUrl?: string; // New field
+  successReturnUrl?: string; // New field
+  currency?: string; // New field
+  provider?: string; // New field
+}
+
+export type PaymentStatus =
+  | "PENDING"
+  | "PAID"
+  | "CANCELLED"
+  | "FAILED"
+  | "EXPIRED";
+
+export interface PaymentResultResponse {
+  transactionId: number;
+  status: PaymentStatus;
+  approvalUrl?: string;
+  captureUrl?: string;
+  qrContent?: string;
+  providerReference?: string;
 }
 
 export interface Order {
@@ -42,6 +62,7 @@ export interface Order {
   items: OrderItem[];
   createdAt?: string;
   updatedAt?: string;
+  paymentResult?: PaymentResultResponse;
 }
 
 export interface OrderResponse {

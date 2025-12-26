@@ -38,6 +38,19 @@ public class CreateOrderRequest {
     private String cartSessionKey;
     @Schema(example = "25000")
     private BigDecimal shippingFee;
+
+    @Schema(example = "PAYPAL")
+    private com.ecommerce.aims.payment.models.PaymentProvider provider;
+    @Schema(example = "USD")
+    @NotBlank
+    private String currency;
+    @Schema(example = "http://localhost:3000/success")
+    @NotBlank
+    private String successReturnUrl;
+    @Schema(example = "http://localhost:3000/cancel")
+    @NotBlank
+    private String cancelReturnUrl;
+
     @NotEmpty
     @Valid
     private List<OrderItemRequest> items;

@@ -22,6 +22,7 @@ public class OrderResponse {
     private BigDecimal totalWithVat;
     private LocalDateTime createdAt;
     private List<OrderLine> items;
+    private com.ecommerce.aims.payment.dto.PaymentResultResponse paymentResult;
     private Long paymentTransactionId;
     private PaymentStatus paymentStatus;
 
