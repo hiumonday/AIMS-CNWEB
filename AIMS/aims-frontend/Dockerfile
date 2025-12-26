@@ -1,8 +1,10 @@
-FROM node:22-alpine AS builder
+# Multi-stage build for React + Vite frontend
+
+FROM node:20-alpine
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# Copy package files for better layer caching
+COPY package.json package-lock.json* ./
 
 # Install dependencies
 RUN npm install
@@ -13,21 +15,12 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Stage 2: Serve the application with Nginx
-FROM nginx:alpine
-WORKDIR /usr/share/nginx/html
+# Expose port 4173 (Vite preview default)
+EXPOSE 4173
 
-# Remove default nginx static assets
-RUN rm -rf ./*
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:4173 || exit 1
 
-# Copy built assets from builder stage
-COPY --from=builder /app/dist .
-
-# Copy custom nginx config if you have one, otherwise default acts as fallback
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port 80
-EXPOSE 80
-
-# Start Nginx server
-CMD ["nginx", "-g", "daemon off;"]
+# Start the preview server
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0"]

@@ -76,7 +76,7 @@ const DeliveryPage = () => {
         addressLine: form.address,
         city: form.city,
         province: form.state,
-        postalCode: "00000", // TODO: Add postal code field if needed
+        postalCode: "00000",
         cartSessionKey: sessionKey,
         shippingFee: deliveryFee,
         items: lines.map((line) => ({
@@ -85,6 +85,11 @@ const DeliveryPage = () => {
           quantity: line.quantity,
           price: line.price,
         })),
+       
+        cancelReturnUrl: "http://localhost:5173/payment/cancel",
+        successReturnUrl: "http://localhost:5173/payment/success?orderId=39",
+        currency: "VND",
+        provider: "VIETQR",
       });
 
       // Save order ID to localStorage for payment success page
@@ -94,6 +99,7 @@ const DeliveryPage = () => {
       navigate("/checkout/payment", {
         state: {
           orderId: order.id,
+          order, // Pass the full order object which contains paymentResult
           deliveryInfo: form,
           deliveryFee,
           total,

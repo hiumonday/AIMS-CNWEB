@@ -26,6 +26,8 @@ public class Invoice {
 
     @OneToOne
     @JoinColumn(name = "order_id")
+    @lombok.ToString.Exclude
+    @lombok.EqualsAndHashCode.Exclude
     private Order order;
 
     private BigDecimal totalBeforeVat;

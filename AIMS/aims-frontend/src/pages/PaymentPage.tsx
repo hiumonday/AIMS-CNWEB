@@ -43,7 +43,7 @@ const parseServerTime = (value?: string) => {
 const PaymentPage = () => {
   const navigate = useNavigate();
   const location = useLocation() as {
-    state?: { orderId?: number; deliveryFee?: number; total?: number };
+    state?: { orderId?: number; deliveryFee?: number; total?: number; order?: Order };
   };
   const storedOrderId = Number(localStorage.getItem("currentOrderId"));
   const resolvedOrderId = Number.isFinite(storedOrderId) ? storedOrderId : undefined;
@@ -53,14 +53,15 @@ const PaymentPage = () => {
   const { showToast } = useToast();
   const [showSuccess, setShowSuccess] = useState(false);
   const [showFail, setShowFail] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+
   const [isCancelling, setIsCancelling] = useState(false);
-  const [orderSnapshot, setOrderSnapshot] = useState<Order | null>(null);
-  const [displayOrderCode, setDisplayOrderCode] = useState("");
+  const [orderSnapshot, setOrderSnapshot] = useState<Order | null>(
+    location.state?.order ?? null
+  );
   const autoCancelRef = useRef(false);
-  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
-  const [qrErrorMessage, setQrErrorMessage] = useState<string | null>(null);
-  const orderExpirationMs = 5 * 60 * 1000;
+  
+  // Use orderId directly for display
+  const displayOrderCode = orderId ? String(orderId) : "--";
 
   const formatVnd = (value: number | null | undefined) =>
     `${Math.max(0, Math.round(value ?? 0)).toLocaleString("vi-VN")} VND`;
@@ -93,7 +94,7 @@ const PaymentPage = () => {
     };
   }, [orderSnapshot, subtotal, deliveryFee]);
 
-  const paymentAmount = Math.max(0, Math.round(totals.totalWithVat));
+
 
   const expiresAtMs = useMemo(() => {
     const now = Date.now();
@@ -204,21 +205,37 @@ const PaymentPage = () => {
     };
   }, [orderId]);
 
+
+
+  // Handle payment result from order details
+  // Handle payment result from order details
   useEffect(() => {
-    if (!orderId) {
-      setDisplayOrderCode("");
-      return;
+    if (orderSnapshot) {
+      console.log("PaymentPage: Order loaded", orderSnapshot);
     }
-    const storageKey = `payment-order-code:${orderId}`;
-    const savedCode = localStorage.getItem(storageKey);
-    if (savedCode) {
-      setDisplayOrderCode(savedCode);
-      return;
+    if (orderSnapshot?.paymentResult) {
+      console.log("PaymentPage: Payment Result found", orderSnapshot.paymentResult);
+      const { qrContent, providerReference, status } = orderSnapshot.paymentResult;
+      if (qrContent) {
+        console.log("PaymentPage: Setting QR Content", qrContent);
+        setQrCodeUrl(qrContent);
+      } else {
+        console.warn("PaymentPage: No QR Content in payment result");
+      }
+      if (providerReference) {
+        setPaymentLinkId(providerReference);
+      }
+      // If status is already PAID (e.g. re-opening page), update local state
+      if (status) {
+         setPaymentStatus(status);
+         if (status === 'PAID') {
+           setShowSuccess(true);
+         }
+      }
+    } else if (orderSnapshot) {
+        console.warn("PaymentPage: No paymentResult in order");
     }
-    const generated = String(Math.floor(Math.random() * 100000000)).padStart(8, "0");
-    localStorage.setItem(storageKey, generated);
-    setDisplayOrderCode(generated);
-  }, [orderId]);
+  }, [orderSnapshot]);
 
   useEffect(() => {
     if (!expiresAtMs) {
@@ -428,9 +445,7 @@ const PaymentPage = () => {
                       </div>
                     ) : (
                       <div className="qr-placeholder">
-                        {isProcessing
-                          ? "Đang tạo mã..."
-                          : qrErrorMessage || "▢▢"}
+                        {orderSnapshot ? "▢▢" : "Đang tải..."}
                       </div>
                     )}
                   </div>
@@ -477,7 +492,7 @@ const PaymentPage = () => {
                   className="btn light"
                   type="button"
                   onClick={handleCancelOrder}
-                  disabled={isProcessing || isCancelling}
+                  disabled={isCancelling}
                 >
                   {isCancelling ? "CANCELLING..." : "CANCEL ORDER"}
                 </button>

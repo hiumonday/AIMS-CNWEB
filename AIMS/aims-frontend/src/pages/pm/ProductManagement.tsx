@@ -171,8 +171,8 @@ const ProductManagement: React.FC = () => {
                 <input
                     type="text"
                     placeholder="Search by title..."
-                    value={filters.title || ''}
-                    onChange={(e) => handleFilterChange('title', e.target.value)}
+                    value={filters.query || ''}
+                    onChange={(e) => handleFilterChange('query', e.target.value)}
                     className="filter-input"
                 />
                 <select

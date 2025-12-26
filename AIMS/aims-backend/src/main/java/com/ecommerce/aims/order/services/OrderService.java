@@ -21,6 +21,9 @@ import com.ecommerce.aims.product.models.Product;
 import com.ecommerce.aims.product.models.ProductStatus;
 import com.ecommerce.aims.product.repository.ProductRepository;
 import com.ecommerce.aims.product.services.StockService;
+import com.ecommerce.aims.payment.dto.CreatePaymentRequest;
+import com.ecommerce.aims.payment.dto.PaymentResultResponse;
+import com.ecommerce.aims.payment.services.PaymentService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -44,6 +47,7 @@ public class OrderService {
     private final IPaymentTransactionRepository paymentTransactionRepository;
     private final StockService stockService;
     private final CartService cartService;
+    private final PaymentService paymentService;
     private final OrderExpirationConfig expirationConfig;
 
     @Transactional
@@ -100,6 +104,7 @@ public class OrderService {
         }
 
         Order order = new Order();
+        order.setId(System.currentTimeMillis() / 1000);
         order.setStatus(OrderStatus.PENDING_PROCESSING);
         order.setCustomerEmail(request.getCustomerEmail());
         order.setCustomerName(request.getCustomerName());
@@ -161,7 +166,20 @@ public class OrderService {
 
         Order saved = orderRepository.save(order);
 
-        return toResponse(saved);
+        CreatePaymentRequest paymentRequest = new CreatePaymentRequest();
+        paymentRequest.setOrderId(saved.getId());
+        paymentRequest.setProvider(request.getProvider());
+        paymentRequest.setCurrency(request.getCurrency());
+        paymentRequest.setAmount(saved.getTotalWithVat());
+        paymentRequest.setSuccessReturnUrl(request.getSuccessReturnUrl());
+        paymentRequest.setCancelReturnUrl(request.getCancelReturnUrl());
+
+        PaymentResultResponse paymentResult = paymentService.createPayment(paymentRequest);
+
+        OrderResponse response = toResponse(saved);
+        response.setPaymentResult(paymentResult);
+
+        return response;
     }
 
     public OrderResponse getOrder(Long id) {
