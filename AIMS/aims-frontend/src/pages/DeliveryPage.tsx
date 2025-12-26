@@ -38,7 +38,8 @@ const DeliveryPage = () => {
     () => (subtotal > 100000 ? 0 : baseDeliveryFee),
     [subtotal]
   );
-  const total = subtotal + deliveryFee;
+  const vatAmount = useMemo(() => subtotal * 0.1, [subtotal]);
+  const total = subtotal + deliveryFee + vatAmount;
 
   const onContinue = async () => {
     setTouched({
@@ -274,13 +275,17 @@ const DeliveryPage = () => {
                 <span>Subtotal</span>
                 <span>{subtotal.toLocaleString('vi-VN')} VND</span>
               </div>
-              <div className="summary-row">
+              {/* <div className="summary-row">
                 <span>Delivery Fee</span>
                 <span>{deliveryFee.toLocaleString('vi-VN')} VND</span>
+              </div> */}
+              <div className="summary-row">
+                <span>VAT (10%)</span>
+                <span>{vatAmount.toLocaleString('vi-VN')} VND</span>
               </div>
-              <p className="summary-note">
+              {/* <p className="summary-note">
                 Free delivery on orders over 100.000 VND
-              </p>
+              </p> */}
             </div>
             <div className="summary-total">
               <span>Total</span>

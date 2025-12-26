@@ -31,29 +31,29 @@ const NewspaperSection: FC<LandingSectionProps> = ({
         'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=900&q=80',
       inner: {
         title: 'The Morning Brief',
-        subtitle: 'Chuong I - Man anh tai gia',
+        subtitle: 'Chương I - Màn ảnh tại gia',
         lead:
-          'Chon tung tua DVD chuan mau, tung cap canh am thanh de tai tao trai nghiem rap phim ngay tai nha.',
+          'Chọn từng tựa DVD chuẩn màu, từng cặp cảnh âm thanh để tái tạo trải nghiệm rạp phim ngay tại nhà.',
         image:
           'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=900&q=80',
         columns: [
-          'Tu phim kinh dien den nhung bo suu tap gioi han, moi tua sach hinh va am deu duoc kiem dinh ky.',
-          'Am thanh am ap, phu de ro rang va chat luong tai tao giup tung khoanh khac song dong hon.',
+          'Từ phim kinh điển đến những bộ sưu tập giới hạn, mỗi tựa sắc hình và âm đều được kiểm định kỹ.',
+          'Âm thanh ấm áp, phụ đề rõ ràng và chất lượng tái tạo giúp từng khoảnh khắc sống động hơn.',
         ],
-        rightTitle: 'Goc bien tap',
+        rightTitle: 'Góc biên tập',
         articles: [
           {
-            title: 'Suat chieu cua tuan',
-            body: 'Goi y 5 bo phim kinh dien cho buoi toi cuoi tuan, co kem thong tin nhac nen.',
+            title: 'Suất chiếu của tuần',
+            body: 'Gợi ý 5 bộ phim kinh điển cho buổi tối cuối tuần, có kèm thông tin nhạc nền.',
           },
           {
-            title: 'Bao quan dia',
-            body: 'Meo nho de giu be mat dia sach va ben mau, tranh tray xuoc khong dang co.',
+            title: 'Bảo quản đĩa',
+            body: 'Mẹo nhỏ để giữ bề mặt đĩa sạch và bền màu, tránh trầy xước không đáng có.',
           },
         ],
         promo: {
-          label: 'Danh rieng cho ban',
-          offer: 'Giam 20% bo suu tap phim moi',
+          label: 'Dành riêng cho bạn',
+          offer: 'Giảm 20% bộ sưu tập phim mới',
         },
       },
     },
@@ -65,29 +65,29 @@ const NewspaperSection: FC<LandingSectionProps> = ({
         'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=900&q=80',
       inner: {
         title: 'Urban Dispatch',
-        subtitle: 'Chuong II - Nhip song thanh pho',
+        subtitle: 'Chương II - Nhịp sống thành phố',
         lead:
-          'Khi thanh pho bat dau thuc giac, nhung diem hen van hoa va am nhac tao nen mot ngay moi song dong.',
+          'Khi thành phố bắt đầu thức giấc, những điểm hẹn văn hóa và âm nhạc tạo nên một ngày mới sống động.',
         image:
           'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=900&q=80',
         columns: [
-          'Cac su kien ngoai troi, trien lam nghe thuat va lich chieu dac biet dang duoc cap nhat lien tuc.',
-          'Nhung quan ca phe nho giua long pho co tro thanh noi hut ban doc de doc va ghi chu.',
+          'Các sự kiện ngoài trời, triển lãm nghệ thuật và lịch chiếu đặc biệt đang được cập nhật liên tục.',
+          'Những quán cà phê nhỏ giữa lòng phố cổ trở thành nơi hút bạn đọc để đọc và ghi chú.',
         ],
-        rightTitle: 'Goc bien tap',
+        rightTitle: 'Góc biên tập',
         articles: [
           {
-            title: 'Dem nhac duong pho',
-            body: 'Chuong trinh am nhac trinh dien tren cac tuyen pho cu, mo cua tu 19:00.',
+            title: 'Đêm nhạc đường phố',
+            body: 'Chương trình âm nhạc trình diễn trên các tuyến phố cũ, mở cửa từ 19:00.',
           },
           {
-            title: 'Thuc don sang tao',
-            body: 'Nhung mon an moi toi gian nhung day cam hung, hop voi tuan nang dong.',
+            title: 'Thực đơn sáng tạo',
+            body: 'Những món ăn mới tối giản nhưng đầy cảm hứng, hợp với tuần năng động.',
           },
         ],
         promo: {
-          label: 'Danh rieng cho ban',
-          offer: 'Tang ve tham quan trien lam',
+          label: 'Dành riêng cho bạn',
+          offer: 'Tặng vé tham quan triển lãm',
         },
       },
     },
@@ -99,29 +99,29 @@ const NewspaperSection: FC<LandingSectionProps> = ({
         'https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=900&q=80',
       inner: {
         title: 'Ink & Memory',
-        subtitle: 'Chuong III - Vi giay co',
+        subtitle: 'Chương III - Vị giấy cổ',
         lead:
-          'Van hoa doc bao giay quay tro lai nhu mot nghi thuc cham, giu cho tam tri biet tam nghi.',
+          'Văn hóa đọc báo giấy quay trở lại như một nghi thức chậm, giữ cho tâm trí biết tạm nghỉ.',
         image:
           'https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=900&q=80',
         columns: [
-          'Nhieu ban doc tim lai cam giac lat trang va ghi chu truc tiep tren mat giay.',
-          'Tu nhung trang tin kinh dien, ta thay lai net dep cua kieu chu va layout thu cong.',
+          'Nhiều bạn đọc tìm lại cảm giác lật trang và ghi chú trực tiếp trên mặt giấy.',
+          'Từ những trang tin kinh điển, ta thấy lại nét đẹp của kiểu chữ và layout thủ công.',
         ],
-        rightTitle: 'Goc bien tap',
+        rightTitle: 'Góc biên tập',
         articles: [
           {
-            title: 'Bo suu tap co',
-            body: 'Gioi thieu nhung an ban gioi han, mo ta chuyen va ky uc.',
+            title: 'Bộ sưu tập cổ',
+            body: 'Giới thiệu những ấn bản giới hạn, mô tả chuyện và ký ức.',
           },
           {
-            title: 'Phong vien ke chuyen',
-            body: 'Mot ngay tac nghiep cua phong vien tren pho, ghi lai bang but muc.',
+            title: 'Phóng viên kể chuyện',
+            body: 'Một ngày tác nghiệp của phóng viên trên phố, ghi lại bằng bút mực.',
           },
         ],
         promo: {
-          label: 'Danh rieng cho ban',
-          offer: 'Mua 2 tang 1 an ban co',
+          label: 'Dành riêng cho bạn',
+          offer: 'Mua 2 tặng 1 ấn bản cổ',
         },
       },
     },
@@ -133,29 +133,29 @@ const NewspaperSection: FC<LandingSectionProps> = ({
         'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=80',
       inner: {
         title: 'Studio Journal',
-        subtitle: 'Chuong IV - Nguon cam hung',
+        subtitle: 'Chương IV - Nguồn cảm hứng',
         lead:
-          'Phong lam viec cua nhung nha thiet ke day ap anh sang va nhung ghi chu toi gian.',
+          'Phòng làm việc của những nhà thiết kế đầy ắp ánh sáng và những ghi chú tối giản.',
         image:
           'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=900&q=80',
         columns: [
-          'Cau chuyen ve cach ho phac hoa y tuong, tu giay nhap den san pham hoan chinh.',
-          'Xu huong toi gian dang dinh hinh cac bo suu tap moi trong nam nay.',
+          'Câu chuyện về cách họ phác họa ý tưởng, từ giấy nháp đến sản phẩm hoàn chỉnh.',
+          'Xu hướng tối giản đang định hình các bộ sưu tập mới trong năm nay.',
         ],
-        rightTitle: 'Goc bien tap',
+        rightTitle: 'Góc biên tập',
         articles: [
           {
-            title: 'Phong cach toi gian',
-            body: 'Giang luoc toi da de tap trung vao trai nghiem doc va nhin.',
+            title: 'Phong cách tối giản',
+            body: 'Giản lược tối đa để tập trung vào trải nghiệm đọc và nhìn.',
           },
           {
-            title: 'Bo cuc tu do',
-            body: 'Cach sap xep noi dung de giu nhip doc tu nhien.',
+            title: 'Bố cục tự do',
+            body: 'Cách sắp xếp nội dung để giữ nhịp đọc tự nhiên.',
           },
         ],
         promo: {
-          label: 'Danh rieng cho ban',
-          offer: 'Tai mien phi bo template thiet ke',
+          label: 'Dành riêng cho bạn',
+          offer: 'Tải miễn phí bộ template thiết kế',
         },
       },
     },
@@ -167,29 +167,29 @@ const NewspaperSection: FC<LandingSectionProps> = ({
         'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
       inner: {
         title: 'Travel Notes',
-        subtitle: 'Chuong V - Chuyen di ngan',
+        subtitle: 'Chương V - Chuyến đi ngắn',
         lead:
-          'Mot cuoc doi nho moi cuoi tuan la du de nap lai nang luong va ghi them ky uc.',
+          'Một cuộc đổi nhỏ mỗi cuối tuần là đủ để nạp lại năng lượng và ghi thêm ký ức.',
         image:
           'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
         columns: [
-          'Diem dung chan gan thanh pho, du lich cham, kham pha nhung quan ca phe nho.',
-          'Mang theo mot to bao va mot chiec but, ghi lai nhung dieu nho nhat.',
+          'Điểm dừng chân gần thành phố, du lịch chậm, khám phá những quán cà phê nhỏ.',
+          'Mang theo một tờ báo và một chiếc bút, ghi lại những điều nhỏ nhất.',
         ],
-        rightTitle: 'Goc bien tap',
+        rightTitle: 'Góc biên tập',
         articles: [
           {
-            title: 'Balo toi gian',
-            body: 'Chi can 5 mon do co ban de bat dau chuyen di nhe nhang.',
+            title: 'Balo tối giản',
+            body: 'Chỉ cần 5 món đồ cơ bản để bắt đầu chuyến đi nhẹ nhàng.',
           },
           {
-            title: 'Lich trinh 48h',
-            body: 'Goi y lich trinh tu sang thu bay den chieu chu nhat.',
+            title: 'Lịch trình 48h',
+            body: 'Gợi ý lịch trình từ sáng thứ bảy đến chiều chủ nhật.',
           },
         ],
         promo: {
-          label: 'Danh rieng cho ban',
-          offer: 'Giam 15% goi thanh vien',
+          label: 'Dành riêng cho bạn',
+          offer: 'Giảm 15% gói thành viên',
         },
       },
     },
@@ -201,29 +201,29 @@ const NewspaperSection: FC<LandingSectionProps> = ({
         'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80',
       inner: {
         title: 'Readers Corner',
-        subtitle: 'Chuong VI - Cong dong doc gia',
+        subtitle: 'Chương VI - Cộng đồng độc giả',
         lead:
-          'Khi cau chuyen duoc chia se, mot cong dong nho se duoc hinh thanh tu nhung trang bao.',
+          'Khi câu chuyện được chia sẻ, một cộng đồng nhỏ sẽ được hình thành từ những trang báo.',
         image:
           'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80',
         columns: [
-          'Doc gia gui ve nhung ghi chu nho, chia se cam nhan ve van hoa doc ngay nay.',
-          'Moi tuan, chung toi chon ra mot cau chuyen ban doc tieu bieu.',
+          'Độc giả gửi về những ghi chú nhỏ, chia sẻ cảm nhận về văn hóa đọc ngày nay.',
+          'Mỗi tuần, chúng tôi chọn ra một câu chuyện bạn đọc tiêu biểu.',
         ],
-        rightTitle: 'Goc bien tap',
+        rightTitle: 'Góc biên tập',
         articles: [
           {
-            title: 'Gop y chu de moi',
-            body: 'Goi y chu de, chuyen muc ma ban muon doc trong so tiep theo.',
+            title: 'Góp ý chủ đề mới',
+            body: 'Gợi ý chủ đề, chuyên mục mà bạn muốn đọc trong số tiếp theo.',
           },
           {
-            title: 'Goc thu ban doc',
-            body: 'Nhung dong thu nho ve khoanh khac doc bao cung gia dinh.',
+            title: 'Góc thư bạn đọc',
+            body: 'Những dòng thư nhỏ về khoảnh khắc đọc báo cùng gia đình.',
           },
         ],
         promo: {
-          label: 'Danh rieng cho ban',
-          offer: 'Tang ky niem chuong AIMS',
+          label: 'Dành riêng cho bạn',
+          offer: 'Tặng kỷ niệm chương AIMS',
         },
       },
     },

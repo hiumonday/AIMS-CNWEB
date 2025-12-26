@@ -41,6 +41,7 @@ export interface Order {
   status?: string;
   items: OrderItem[];
   createdAt?: string;
+  expiresAt?: string;
   updatedAt?: string;
 }
 

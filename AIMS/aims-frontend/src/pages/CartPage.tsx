@@ -16,7 +16,7 @@ const CartPage = () => {
       <div className="shopping-bag-container">
 
         <header className="bag-header-section">
-          <h1>SHOPPING BAG</h1>
+          <h1>SHOPPING CART</h1>
         </header>
 
         {lines.length === 0 ? (

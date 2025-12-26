@@ -30,7 +30,7 @@
 }
 
 .bag-header-section h1 {
-  font-size: 16px;
+  font-size: 30px;
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -181,6 +181,7 @@
   background: #fdfdfd;
   padding: 30px;
   border: 1px solid #f0f0f0;
+  border-radius: 10%;
 }
 
 .subtotal-display {
@@ -216,6 +217,7 @@
   border: 1px solid var(--color-black);
   cursor: pointer;
   transition: all 0.2s ease;
+  border-radius: 12px;
   box-sizing: border-box;
 }
 

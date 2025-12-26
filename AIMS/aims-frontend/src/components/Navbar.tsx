@@ -62,7 +62,6 @@ const Navbar: FC = () => {
           <span className="nav__search-trigger">Search</span>
           <form className="nav__search-panel" onSubmit={handleSearchSubmit}>
             <label className="nav__search-field">
-              <span>Enter keyword</span>
               <input
                 type="text"
                 value={searchValue}
