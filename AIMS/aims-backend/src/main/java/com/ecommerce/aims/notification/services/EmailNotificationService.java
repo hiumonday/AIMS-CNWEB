@@ -362,4 +362,12 @@ public class EmailNotificationService {
         String htmlBody = templateEngine.process("email/user-unlocked", context);
         sendHtmlEmail(email, "AIMS Account Unlocked", htmlBody);
     }
+
+    @Async
+    public void sendSubscriptionThankYouEmail(String email) {
+        Context context = new Context();
+        context.setVariable("homeUrl", frontendUrl);
+        String htmlBody = templateEngine.process("email/subscription-thank-you", context);
+        sendHtmlEmail(email, "Thank you for subscribing to AIMS!", htmlBody);
+    }
 }
