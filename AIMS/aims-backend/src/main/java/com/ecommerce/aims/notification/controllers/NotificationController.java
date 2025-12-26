@@ -3,6 +3,7 @@ package com.ecommerce.aims.notification.controllers;
 import com.ecommerce.aims.common.dto.ApiResponse;
 import com.ecommerce.aims.notification.dto.SendEmailRequest;
 import com.ecommerce.aims.notification.dto.SendOrderPaymentEmailRequest;
+import com.ecommerce.aims.notification.dto.SubscriptionRequest;
 import com.ecommerce.aims.notification.models.EmailTemplateType;
 import com.ecommerce.aims.notification.services.EmailNotificationService;
 import jakarta.validation.Valid;
@@ -82,5 +83,11 @@ public class NotificationController {
         String token = request.getOrDefault("token", "test-token-123");
         emailNotificationService.sendAdminPasswordResetEmail(email, token);
         return ApiResponse.success(null, "Test email PASSWORD_RESET sent to " + email);
+    }
+
+    @PostMapping("/subscription-thank-you")
+    public ApiResponse<Void> sendSubscriptionThankYouEmail(@Valid @RequestBody SubscriptionRequest request) {
+        emailNotificationService.sendSubscriptionThankYouEmail(request.getEmail());
+        return ApiResponse.success(null, "Subscription thank you email sent to " + request.getEmail());
     }
 }

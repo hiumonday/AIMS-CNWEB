@@ -58,6 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/cart/**").permitAll()
                         .requestMatchers("/api/payments/**").permitAll()
                         .requestMatchers("/api/webhooks/**").permitAll()
+                        .requestMatchers("/api/notifications/subscription-thank-you").permitAll()
                         .requestMatchers("/swagger-ui/**", "/api/docs/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/admin/users/**").hasAuthority("ADMIN")

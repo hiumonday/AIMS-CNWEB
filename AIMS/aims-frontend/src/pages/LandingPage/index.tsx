@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState, type CSSProperties, type FC } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DvdSection, { dvdTheme } from './DvdSection';
 import CdSection, { cdTheme } from './CdSection';
 import NewspaperSection, { newspaperTheme } from './NewspaperSection';
 import BookSection, { bookTheme } from './BookSection';
 import type { LandingSectionProps, LandingTheme } from './types';
 import './LandingPage.css';
+
+// Khai báo Base URL của Backend (Thay đổi port 8000 nếu cần)
+const API_BASE_URL = 'http://localhost:8000/api';
 
 type SectionConfig = {
   theme: LandingTheme;
@@ -21,6 +25,43 @@ const sections: SectionConfig[] = [
 const LandingPage = () => {
   const scrollyRef = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
+
+  // LOGIC ĐÃ SỬA: Gửi đến API_BASE_URL/notifications/subscription-thank-you
+  const handleNewsletterSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // Sử dụng API_BASE_URL để gọi đúng địa chỉ Backend
+      const response = await fetch(`${API_BASE_URL}/notifications/subscription-thank-you`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email }), // Body khớp với Postman của bạn
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        console.log("Email gửi thành công:", result.message);
+        // Chuyển hướng sang trang cảm ơn của Frontend
+        navigate('/subscription-thank-you');
+      } else {
+        alert("Lỗi: " + (result.message || "Không thể đăng ký"));
+      }
+    } catch (error) {
+      console.error("Lỗi kết nối API:", error);
+      alert("Không thể kết nối tới máy chủ Backend (Port 8000). Hãy kiểm tra lại Server.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     let frameId = 0;
@@ -28,25 +69,18 @@ const LandingPage = () => {
       const nearest = Math.round(value);
       const distance = Math.abs(value - nearest);
       const threshold = 0.25;
-      if (distance >= threshold) {
-        return value;
-      }
+      if (distance >= threshold) return value;
       const eased = (distance / threshold) ** 2;
       return nearest + (value - nearest) * eased;
     };
 
     const updateProgress = () => {
       frameId = 0;
-      if (!scrollyRef.current) {
-        return;
-      }
+      if (!scrollyRef.current) return;
       const container = scrollyRef.current;
       const start = container.offsetTop;
       const total = container.offsetHeight - window.innerHeight;
-      if (total <= 0) {
-        setProgress(0);
-        return;
-      }
+      if (total <= 0) return;
       const raw = (window.scrollY - start) / total;
       const clamped = Math.min(Math.max(raw, 0), 1);
       const next = applySnap(clamped * (sections.length - 1));
@@ -54,10 +88,7 @@ const LandingPage = () => {
     };
 
     const handleScroll = () => {
-      if (frameId) {
-        return;
-      }
-      frameId = window.requestAnimationFrame(updateProgress);
+      if (!frameId) frameId = window.requestAnimationFrame(updateProgress);
     };
 
     updateProgress();
@@ -66,9 +97,7 @@ const LandingPage = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-      }
+      if (frameId) window.cancelAnimationFrame(frameId);
     };
   }, []);
 
@@ -98,40 +127,20 @@ const LandingPage = () => {
               '--theme-word': section.theme.word,
               transform: `translateX(${motion.translateX}%)`,
               opacity: motion.opacity,
-              zIndex:
-                100 - Math.round(Math.abs(motion.offset) * 10) +
-                (motion.offset < 0 ? 1 : 0),
+              zIndex: 100 - Math.round(Math.abs(motion.offset) * 10) + (motion.offset < 0 ? 1 : 0),
               pointerEvents: Math.abs(motion.offset) < 0.6 ? 'auto' : 'none',
             } as CSSProperties;
-            const heroStyle = {
-              transform: `translateX(${motion.clamped * 16}px)`,
-              opacity: 1 - motion.depth * 0.2,
-            };
-            const contentStyle = {
-              transform: `translateX(${motion.clamped * 10}px)`,
-              opacity: 1 - motion.depth * 0.25,
-            };
-            const wordShift = motion.clamped * 30;
-            const wordStyle = {
-              transform:
-                section.theme.key === 'cd'
-                  ? `translateX(-50%) translateX(${wordShift}px) rotate(-6deg)`
-                  : `translateX(${wordShift}px)`,
-            };
-            const scrollHint =
-              index < sections.length - 1
-                ? 'Cuộn để xem chủ đề tiếp theo'
-                : 'Cuộn xuống phần email';
+
             const SectionComponent = section.Component;
 
             return (
               <SectionComponent
                 key={section.theme.key}
                 style={themeStyle}
-                heroStyle={heroStyle}
-                contentStyle={contentStyle}
-                scrollHint={scrollHint}
-                wordStyle={wordStyle}
+                heroStyle={{ transform: `translateX(${motion.clamped * 16}px)`, opacity: 1 - motion.depth * 0.2 }}
+                contentStyle={{ transform: `translateX(${motion.clamped * 10}px)`, opacity: 1 - motion.depth * 0.25 }}
+                scrollHint={index < sections.length - 1 ? 'Cuộn để xem chủ đề tiếp theo' : 'Cuộn xuống phần email'}
+                wordStyle={{ transform: section.theme.key === 'cd' ? `translateX(-50%) translateX(${motion.clamped * 30}px) rotate(-6deg)` : `translateX(${motion.clamped * 30}px)` }}
                 isActive={Math.abs(motion.offset) < 0.6}
               />
             );
@@ -144,18 +153,19 @@ const LandingPage = () => {
           <div>
             <p className="landing__newsletter-eyebrow">AIMS MEDIA</p>
             <h2>Nhận email cập nhật ưu đãi mới</h2>
-            <p>
-              Gửi cho bạn các bộ sưu tập mới, ưu đãi theo mùa và gợi ý phù hợp gu
-              nghe, gu đọc.
-            </p>
+            <p>Gửi cho bạn các bộ sưu tập mới, ưu đãi theo mùa và gợi ý phù hợp gu nghe, gu đọc.</p>
           </div>
-          <form
-            className="landing__newsletter-form"
-            onSubmit={(event) => event.preventDefault()}
-          >
-            <input type="email" placeholder="Email của bạn" required />
-            <button className="btn primary" type="submit">
-              Đăng ký
+          <form className="landing__newsletter-form" onSubmit={handleNewsletterSubmit}>
+            <input
+              type="email"
+              placeholder="Email của bạn"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isSubmitting}
+            />
+            <button className="btn primary" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Đang đăng ký...' : 'Đăng ký'}
             </button>
           </form>
         </div>
