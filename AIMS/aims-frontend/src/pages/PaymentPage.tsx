@@ -58,7 +58,11 @@ const PaymentPage = () => {
   const [orderSnapshot, setOrderSnapshot] = useState<Order | null>(
     location.state?.order ?? null
   );
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const autoCancelRef = useRef(false);
+
+  // 10 minutes expiration
+  const orderExpirationMs = 60 * 1000;
   
   // Use orderId directly for display
   const displayOrderCode = orderId ? String(orderId) : "--";
@@ -256,51 +260,7 @@ const PaymentPage = () => {
     };
   }, [expiresAtMs]);
 
-  // Fetch VietQR code on load
-  useEffect(() => {
-    if (!orderId || qrCodeUrl || paymentAmount <= 0) {
-      return;
-    }
-    const fetchQr = async () => {
-      setIsProcessing(true);
-      setShowSuccess(false);
-      setShowFail(false);
-      setPaymentStatus(null);
-      setQrImageError(false);
-      setQrErrorMessage(null);
-      try {
-        const payment = await paymentService.createPayment({
-          orderId,
-          provider: "VIETQR",
-          amount: paymentAmount,
-          currency: "VND",
-          successReturnUrl: `${window.location.origin}/payment/success?orderId=${orderId}`,
-          cancelReturnUrl: `${window.location.origin}/payment/cancel`,
-        });
 
-        const qrString = payment.qrContent;
-        if (qrString) {
-          setQrCodeUrl(qrString);
-        } else {
-          setQrErrorMessage("Không thể tạo mã QR. Vui lòng thử lại.");
-        }
-        if (payment.providerReference) {
-          setPaymentLinkId(payment.providerReference);
-        }
-      } catch (error: any) {
-        console.error("Failed to create VietQR payment:", error);
-        const message =
-          error?.response?.data?.message ||
-          error?.message ||
-          "Không thể tạo mã QR.";
-        setQrErrorMessage(message);
-        showToast(message, "error");
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-    fetchQr();
-  }, [orderId, paymentAmount, qrCodeUrl, showToast]);
 
   useEffect(() => {
     const handlePageHide = () => {
@@ -471,11 +431,11 @@ const PaymentPage = () => {
                     <span>Hệ thống tự kiểm tra trạng thái mỗi 3 giây.</span>
                   </div>
                 </div>
-
+{/* 
                 <div className="payment-countdown">
                   <span>Thời gian còn lại</span>
-                  <strong>{formatCountdown(remainingSeconds)}</strong>
-                </div>
+                  <strong>{formatCountdown(300)}</strong>
+                </div> */}
 
                 <div className="payment-amount">
                   {formatVnd(totals.totalWithVat)}
