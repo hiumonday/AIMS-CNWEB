@@ -8,12 +8,46 @@ import orderService, { type Order } from "../services/orderService";
 import { API_BASE_URL } from "../services/api";
 import { QRCodeCanvas } from "qrcode.react";
 
+const parseServerTime = (value?: string) => {
+  if (!value) {
+    return null;
+  }
+  const hasTimezone = /[zZ]|[+-]\d{2}:\d{2}$/.test(value);
+  const parse = (input: string) => {
+    const ms = Date.parse(input);
+    return Number.isNaN(ms) ? null : ms;
+  };
+  const localMs = parse(value);
+  if (hasTimezone) {
+    return localMs;
+  }
+  const utcMs = parse(`${value}Z`);
+  const candidates = [localMs, utcMs].filter(
+    (ms): ms is number => ms != null
+  );
+  if (candidates.length === 0) {
+    return null;
+  }
+  const now = Date.now();
+  const future = candidates.filter((ms) => ms - now > 0);
+  if (future.length > 0) {
+    return future.reduce((best, ms) =>
+      ms - now < best - now ? ms : best
+    );
+  }
+  return candidates.reduce((best, ms) =>
+    ms - now > best - now ? ms : best
+  );
+};
+
 const PaymentPage = () => {
   const navigate = useNavigate();
   const location = useLocation() as {
     state?: { orderId?: number; deliveryFee?: number; total?: number; order?: Order };
   };
-  const orderId = location.state?.orderId;
+  const storedOrderId = Number(localStorage.getItem("currentOrderId"));
+  const resolvedOrderId = Number.isFinite(storedOrderId) ? storedOrderId : undefined;
+  const orderId = location.state?.orderId ?? resolvedOrderId;
   const deliveryFee = location.state?.deliveryFee ?? 15000;
   const { lines, subtotal, clear } = useCart();
   const { showToast } = useToast();
@@ -31,6 +65,17 @@ const PaymentPage = () => {
 
   const formatVnd = (value: number | null | undefined) =>
     `${Math.max(0, Math.round(value ?? 0)).toLocaleString("vi-VN")} VND`;
+
+  const formatCountdown = (seconds: number | null) => {
+    if (seconds == null) {
+      return "--:--";
+    }
+    const safeSeconds = Math.max(0, seconds);
+    const mins = Math.floor(safeSeconds / 60);
+    const secs = safeSeconds % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
+
 
   const totals = useMemo(() => {
     const subtotalAmount = orderSnapshot?.totalBeforeVat ?? subtotal;
@@ -50,6 +95,33 @@ const PaymentPage = () => {
   }, [orderSnapshot, subtotal, deliveryFee]);
 
 
+
+  const expiresAtMs = useMemo(() => {
+    const now = Date.now();
+    if (orderSnapshot?.expiresAt) {
+      const parsed = parseServerTime(orderSnapshot.expiresAt);
+      if (parsed != null) {
+        if (
+          parsed <= now &&
+          orderSnapshot?.status &&
+          !["FAILED", "EXPIRED", "CANCELLED"].includes(orderSnapshot.status)
+        ) {
+          return now + orderExpirationMs;
+        }
+        return parsed;
+      }
+    }
+    if (orderSnapshot?.createdAt) {
+      const parsed = parseServerTime(orderSnapshot.createdAt);
+      if (parsed != null) {
+        return parsed + orderExpirationMs;
+      }
+    }
+    if (orderId) {
+      return now + orderExpirationMs;
+    }
+    return null;
+  }, [orderSnapshot, orderId, orderExpirationMs]);
 
   const triggerAutoCancel = () => {
     if (autoCancelRef.current) {
@@ -165,6 +237,70 @@ const PaymentPage = () => {
     }
   }, [orderSnapshot]);
 
+  useEffect(() => {
+    if (!expiresAtMs) {
+      setRemainingSeconds(null);
+      return;
+    }
+    const updateCountdown = () => {
+      const diffSeconds = Math.max(
+        0,
+        Math.floor((expiresAtMs - Date.now()) / 1000)
+      );
+      setRemainingSeconds(diffSeconds);
+    };
+    updateCountdown();
+    const timerId = window.setInterval(updateCountdown, 1000);
+    return () => {
+      clearInterval(timerId);
+    };
+  }, [expiresAtMs]);
+
+  // Fetch VietQR code on load
+  useEffect(() => {
+    if (!orderId || qrCodeUrl || paymentAmount <= 0) {
+      return;
+    }
+    const fetchQr = async () => {
+      setIsProcessing(true);
+      setShowSuccess(false);
+      setShowFail(false);
+      setPaymentStatus(null);
+      setQrImageError(false);
+      setQrErrorMessage(null);
+      try {
+        const payment = await paymentService.createPayment({
+          orderId,
+          provider: "VIETQR",
+          amount: paymentAmount,
+          currency: "VND",
+          successReturnUrl: `${window.location.origin}/payment/success?orderId=${orderId}`,
+          cancelReturnUrl: `${window.location.origin}/payment/cancel`,
+        });
+
+        const qrString = payment.qrContent;
+        if (qrString) {
+          setQrCodeUrl(qrString);
+        } else {
+          setQrErrorMessage("Không thể tạo mã QR. Vui lòng thử lại.");
+        }
+        if (payment.providerReference) {
+          setPaymentLinkId(payment.providerReference);
+        }
+      } catch (error: any) {
+        console.error("Failed to create VietQR payment:", error);
+        const message =
+          error?.response?.data?.message ||
+          error?.message ||
+          "Không thể tạo mã QR.";
+        setQrErrorMessage(message);
+        showToast(message, "error");
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+    fetchQr();
+  }, [orderId, paymentAmount, qrCodeUrl, showToast]);
 
   useEffect(() => {
     const handlePageHide = () => {
@@ -334,6 +470,11 @@ const PaymentPage = () => {
                     <span className="payment-step__index">03</span>
                     <span>Hệ thống tự kiểm tra trạng thái mỗi 3 giây.</span>
                   </div>
+                </div>
+
+                <div className="payment-countdown">
+                  <span>Thời gian còn lại</span>
+                  <strong>{formatCountdown(remainingSeconds)}</strong>
                 </div>
 
                 <div className="payment-amount">

@@ -22,7 +22,7 @@ public class OrderExpirationConfig {
      * How many minutes until an unpaid order expires.
      * Default: 15 minutes
      */
-    private int paymentMinutes = 1;
+    private int paymentMinutes = 5;
 
     /**
      * How many days to keep cancelled orders before cleanup.

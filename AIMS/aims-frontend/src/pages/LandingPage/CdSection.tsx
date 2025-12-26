@@ -149,7 +149,7 @@ const CdSection: FC<LandingSectionProps> = ({ style, heroStyle, scrollHint, isAc
 
         <div className="vinyl-header">
           <div className="vinyl-eyebrow">AIMS VINTAGE AUDIO</div>
-          <h1 className="vinyl-title">Analog Soul, <br />Digital Clarity.</h1>
+          <h1 className="vinyl-title">Explore your music</h1>
         </div>
 
         <div className="turntable-unit">
