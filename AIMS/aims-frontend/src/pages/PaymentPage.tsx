@@ -53,12 +53,16 @@ const PaymentPage = () => {
   const { showToast } = useToast();
   const [showSuccess, setShowSuccess] = useState(false);
   const [showFail, setShowFail] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
 
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [qrErrorMessage, setQrErrorMessage] = useState<string | null>(null);
   const [orderSnapshot, setOrderSnapshot] = useState<Order | null>(
     location.state?.order ?? null
   );
   const autoCancelRef = useRef(false);
+  const orderExpirationMs = 5 * 60 * 1000;
   
   // Use orderId directly for display
   const displayOrderCode = orderId ? String(orderId) : "--";
@@ -93,6 +97,7 @@ const PaymentPage = () => {
       totalWithVat: finalTotal,
     };
   }, [orderSnapshot, subtotal, deliveryFee]);
+  const paymentAmount = Math.max(0, Math.round(totals.totalWithVat));
 
 
 
@@ -445,7 +450,13 @@ const PaymentPage = () => {
                       </div>
                     ) : (
                       <div className="qr-placeholder">
-                        {orderSnapshot ? "▢▢" : "Đang tải..."}
+                        {isProcessing
+                          ? "Đang tạo mã..."
+                          : qrErrorMessage
+                            ? qrErrorMessage
+                            : orderSnapshot
+                              ? "▢▢"
+                              : "Đang tải..."}
                       </div>
                     )}
                   </div>
