@@ -85,9 +85,8 @@ const DeliveryPage = () => {
           quantity: line.quantity,
           price: line.price,
         })),
-       
-        cancelReturnUrl: "http://localhost:5173/payment/cancel",
-        successReturnUrl: "http://localhost:5173/payment/success?orderId=39",
+        cancelReturnUrl: `${window.location.origin}/payment/cancel`,
+        successReturnUrl: `${window.location.origin}/payment/success`,
         currency: "VND",
         provider: "VIETQR",
       });
